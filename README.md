@@ -1,1 +1,1 @@
-# daily-cryptic
+# Daily Cryptic Puzzle
