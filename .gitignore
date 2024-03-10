@@ -21,3 +21,12 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# python
+**/.ipynb_checkpoints
+
+# files
+data/*.csv
+
+# env
+.env
