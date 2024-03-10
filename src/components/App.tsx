@@ -1,34 +1,29 @@
 import '../assets/css/app.sass';
 import NavBar from './NavBar';
-// import Game from './Game';
-// import Header from './Header';
-// import About from './About';
-// import Contact from './Contact';
-// import Footer from './Footer';
+import Game from './Game';
+import About from './About';
+import Rules from './Rules';
 import { useState } from 'react';
+
 
 const App = () => {
   // blue, cyan, gray, green, orange, pink, purple, red, teal, yellow
   const color = "teal";
 
-  // set a state to store the page we are on
   const [page, setPage] = useState("game");
+
+  console.log(page);
 
   return (
     <>
-      <NavBar color={color} />
-      {/* {
-        page === "game" ? <Game /> : <>
+      <NavBar color={color} updatePage={setPage} />
 
-    }
-
-
-          <Header color={color} />
-          <About color={color} />
-          <Contact color={color} />
-          <Footer /> */}
-        </>
+      {page === "game" && <Game color={color} />}
+      {page === "about" && <About color={color} />}
+      {page === "rules" && <Rules color={color} />}
+      {/* <Footer /> */}
+    </>
   );
 }
 
-      export default App;
+export default App;

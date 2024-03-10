@@ -30,3 +30,8 @@ data/*.csv
 
 # env
 .env
+
+# next
+.next
+next-env.d.ts
+dist

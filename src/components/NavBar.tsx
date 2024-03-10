@@ -6,7 +6,12 @@ import { MoonIcon, SunIcon, HamburgerIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 const TbIcons = require("react-icons/tb");
 
-const NavBar = (props: { color: string }) => {
+interface NavProps {
+    color: string;
+    updatePage?: any;
+}
+
+const NavBar = (props: NavProps) => {
     const colors = {
         "blue": "#3182CE",
         "cyan": "#00B5D8",
@@ -27,14 +32,6 @@ const NavBar = (props: { color: string }) => {
     const scrollToHeader = () => {
         const heroSection = document.querySelector("#header");
         heroSection.scrollIntoView({ behavior: "smooth" });
-    };
-    const scrollToAbout = () => {
-        const aboutSection = document.querySelector("#about");
-        aboutSection.scrollIntoView({ behavior: "smooth" });
-    };
-    const scrollToContact = () => {
-        const contactSection = document.querySelector("#contact");
-        contactSection.scrollIntoView({ behavior: "smooth" });
     };
     const changeScroll = () =>
         document.body.scrollTop > 80 || document.documentElement.scrollTop > 80
@@ -76,14 +73,15 @@ const NavBar = (props: { color: string }) => {
                 <Flex alignItems={"center"}>
                     <Stack direction={"row"} spacing={3}>
                         {isLargerThanMD ? (
-                            <>
-                                <Button variant="ghost" onClick={scrollToAbout}>
-                                    About
+                            ['game', 'about', 'rules'].map((page: string) => (
+                                <Button
+                                    key={page}
+                                    variant="ghost"
+                                    onClick={() => props.updatePage(page)}
+                                >
+                                    {page[0].toUpperCase() + page.slice(1)}
                                 </Button>
-                                <Button variant="ghost" onClick={scrollToContact}>
-                                    Contact
-                                </Button>
-                            </>
+                            ))
                         ) : (
                             <></>
                         )}
@@ -104,12 +102,17 @@ const NavBar = (props: { color: string }) => {
                                     <DrawerOverlay />
                                     <DrawerContent>
                                         <DrawerBody>
-                                            <Button variant="ghost" onClick={scrollToAbout}>
-                                                About
-                                            </Button>
-                                            <Button variant="ghost" onClick={scrollToContact}>
-                                                Contact
-                                            </Button>
+                                            {
+                                                ['game', 'about', 'rules'].map((page: string) => (
+                                                    <Button
+                                                        key={page}
+                                                        variant="ghost"
+                                                        onClick={() => props.updatePage(page)}
+                                                    >
+                                                        {page[0].toUpperCase() + page.slice(1)}
+                                                    </Button>
+                                                ))
+                                            }
                                         </DrawerBody>
                                     </DrawerContent>
                                 </Drawer>
