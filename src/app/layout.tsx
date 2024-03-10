@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   description: 'Cryptic Crossword Daily Word Game',
 }
 
-const RootLayout = ({ children, }: { children: React.ReactNode }) => {
+export const RootLayout = ({ children, }: { children: React.ReactNode }) => {
     return (
         <html lang="en">
             <head>
