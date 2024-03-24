@@ -1,12 +1,13 @@
 import {
     Box, Heading, Container, Text, Button, Stack, CardBody, Card, CardHeader,
     StackDivider, Flex, Spacer, Link, CircularProgress, CircularProgressLabel,
-    Input, HStack
+    Input, HStack, Badge, Divider
 } from "@chakra-ui/react";
 import { Clue } from "../types";
 import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
 import { useEffect, useState } from "react";
 import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon } from "@chakra-ui/icons";
+import { italicizeRegex } from "../utils";
 
 const Game = (props: { color: string }) => {
 
@@ -33,13 +34,11 @@ const Game = (props: { color: string }) => {
     useEffect(() => {
         getDailyClue().then((clue) => {
             setClue(clue);
-            console.log(clue);
             let raw_rating = clue.score * 0.1 + 3.0;
             setRating(raw_rating > 5.0 ? 5.0 : (raw_rating < 0.0 ? 0.0 : raw_rating));
         });
         getNthDay().then((nthday) => {
             setNthDay(nthday);
-            console.log(nthday);
         });
     }, []);
 
@@ -56,7 +55,13 @@ const Game = (props: { color: string }) => {
             setRated(true);
             updateScore(clue.rowid, newScore);
         }
+    }
 
+    const updateGuess = () => {
+        const guess = (document.querySelector('input') as HTMLInputElement).value;
+        if (guesses.length < 5) {
+            setGuesses([...guesses, guess]);
+        }
     }
 
     return (
@@ -92,7 +97,7 @@ const Game = (props: { color: string }) => {
                                         </Heading>
                                     </Stack>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                        {clue.clue}
+                                        {italicizeRegex(clue.clue, '\\([0-9\\W]+\\)$')}
                                     </Text>
                                 </Box>
                                 <Box>
@@ -136,9 +141,33 @@ const Game = (props: { color: string }) => {
                                 </Heading>
                             </CardHeader>
                             <CardBody>
-                                <Stack direction='row'>
-                                    <Input width={'750px'} placeholder='Guess!' />
-                                    <Button variant='outline'>Submit</Button>
+                                <Stack>
+                                    <HStack direction='row'>
+                                        <Stack direction='row' >
+                                            {clue.answer.split(' ').map((word, index) => {
+                                                return <Badge fontSize={'inherit'} key={index} colorScheme='blue'>{word.length}</Badge>
+                                            })}
+                                        </Stack>
+                                        <Input width={'750px'} placeholder='Guess!' isDisabled={guesses.length == 5} />
+                                        <Button variant='outline' onClick={updateGuess} isDisabled={guesses.length == 5}>Submit</Button>
+                                    </HStack>
+                                    <Divider />
+                                    <Stack>
+                                        {guesses.map((guess, index) => {
+                                            return (
+                                                <HStack key={index} direction='row'>
+                                                    <Stack direction={'row'}>
+                                                        {clue.answer.split(' ').map((word, index) => {
+                                                            return <Badge fontSize={'inherit'} key={index} colorScheme='blue'>{word.length}</Badge>
+                                                        })}
+                                                    </Stack>
+                                                    <Text paddingLeft={'16px'}>{guess}</Text>
+                                                </HStack>
+                                            )
+                                        })
+                                        }
+                                    </Stack>
+
                                 </Stack>
                             </CardBody>
                         </Card>
