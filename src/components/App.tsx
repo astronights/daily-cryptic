@@ -9,10 +9,7 @@ import { useState } from 'react';
 const App = () => {
   // blue, cyan, gray, green, orange, pink, purple, red, teal, yellow
   const color = "teal";
-
   const [page, setPage] = useState("game");
-
-  console.log(page);
 
   return (
     <>

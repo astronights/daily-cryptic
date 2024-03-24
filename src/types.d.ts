@@ -1,4 +1,3 @@
-
 export type Clue = {
   rowid: number;
   clue: string;
