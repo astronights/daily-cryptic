@@ -10,6 +10,12 @@ export const getNthDay = async (): Promise<number> => {
     return Promise.resolve(count);
 }
 
+export const updateScore = async (rowid: number, score: number) => {
+    await connectDB();
+    await ClueModel.updateOne({ rowid: rowid }, { score: score });
+    return Promise.resolve();
+}
+
 export const getDailyClue = async (): Promise<Clue> => {
 
     const today = new Date();

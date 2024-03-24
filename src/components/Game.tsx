@@ -1,8 +1,12 @@
-import { Box, Heading, Container, Text, Button, Stack, CardBody, Card, CardHeader, StackDivider, Flex, Spacer, Link } from "@chakra-ui/react";
+import {
+    Box, Heading, Container, Text, Button, Stack, CardBody, Card, CardHeader,
+    StackDivider, Flex, Spacer, Link, CircularProgress, CircularProgressLabel,
+    Input, HStack
+} from "@chakra-ui/react";
 import { Clue } from "../types";
-import { getDailyClue, getNthDay } from "../api/ClueAPI";
+import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
 import { useEffect, useState } from "react";
-import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon } from "@chakra-ui/icons";
+import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon } from "@chakra-ui/icons";
 
 const Game = (props: { color: string }) => {
 
@@ -22,11 +26,16 @@ const Game = (props: { color: string }) => {
     });
     const [nthDay, setNthDay] = useState<number>();
     const [def, setDef] = useState<boolean>(false);
+    const [rating, setRating] = useState<number>(0.0);
+    const [guesses, setGuesses] = useState<string[]>([]);
+    const [rated, setRated] = useState<boolean>(true); //TODO: Change before deployment
 
     useEffect(() => {
         getDailyClue().then((clue) => {
             setClue(clue);
             console.log(clue);
+            let raw_rating = clue.score * 0.1 + 3.0;
+            setRating(raw_rating > 5.0 ? 5.0 : (raw_rating < 0.0 ? 0.0 : raw_rating));
         });
         getNthDay().then((nthday) => {
             setNthDay(nthday);
@@ -38,6 +47,18 @@ const Game = (props: { color: string }) => {
         setDef(true);
     }
 
+    const reRate = (e: any) => {
+        if (!rated) {
+            let id = e.target.id;
+            const newScore = id === 'plus' ? clue.score + 1 : clue.score - 1;
+            const newRating = newScore * 0.1 + 3.0;
+            setRating(newRating > 5.0 ? 5.0 : (newRating < 0.0 ? 0.0 : newRating));
+            setRated(true);
+            updateScore(clue.rowid, newScore);
+        }
+
+    }
+
     return (
         <>
 
@@ -45,9 +66,9 @@ const Game = (props: { color: string }) => {
                 <Stack
                     as={Box}
                     textAlign={"center"}
-                    spacing={{ base: 8, md: 14 }}
+                    spacing={{ base: 6, md: 6 }}
                     pb={{ base: 20, md: 16 }}
-                    pt={{ base: 36, md: 32 }}
+                    pt={{ base: 24, md: 24 }}
                 >
                     <Card>
                         <CardHeader>
@@ -104,10 +125,58 @@ const Game = (props: { color: string }) => {
                         </CardBody>
                     </Card>
 
+                    <Stack
+                        as={Box} w={'4x1'}
+                        textAlign={"center"}
+                        spacing={{ base: 6, md: 6 }}>
+                        <Card>
+                            <CardHeader>
+                                <Heading textAlign={'left'} fontSize='md'>
+                                    Guess ! ({5 - guesses.length} Remaining)
+                                </Heading>
+                            </CardHeader>
+                            <CardBody>
+                                <Stack direction='row'>
+                                    <Input width={'750px'} placeholder='Guess!' />
+                                    <Button variant='outline'>Submit</Button>
+                                </Stack>
+                            </CardBody>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <Heading textAlign={'left'} fontSize='md'>
+                                    Did You Like It ?
+                                </Heading>
+                            </CardHeader>
+                            <CardBody paddingTop={'1px'}>
+                                <HStack direction='row'>
+                                    <Spacer />
+                                    <Button id='minus' onClick={reRate} leftIcon={<CloseIcon />} variant='outline'>
+                                        No..
+                                    </Button>
+                                    <Spacer />
+                                    <HStack direction={'row'}>
+                                        <Heading verticalAlign={'center'} size='sm'>Average Rating</Heading>
+                                        <CircularProgress value={(rating / 5.0) * 100}
+                                            color={rating > 4 ? 'green' : (rating < 2 ? 'red' : 'orange')}>
+                                            <CircularProgressLabel textAlign={'center'}>{rating}</CircularProgressLabel>
+                                        </CircularProgress>
+                                    </HStack>
+
+                                    <Spacer />
+                                    <Button id='plus' onClick={reRate} leftIcon={<CheckIcon />} variant='outline'>
+                                        Yes!
+                                    </Button>
+                                    <Spacer />
+                                </HStack>
+                            </CardBody>
+                        </Card>
+                    </Stack>
+
 
 
                 </Stack>
-            </Container>
+            </Container >
         </>
     );
 }
