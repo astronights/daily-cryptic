@@ -7,7 +7,7 @@ import { Clue } from "../types";
 import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
 import { useEffect, useState } from "react";
 import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon } from "@chakra-ui/icons";
-import { italicizeRegex } from "../utils";
+import { italicizeRegex, compareAnswers } from "../utils";
 
 const Game = (props: { color: string }) => {
 
@@ -60,6 +60,7 @@ const Game = (props: { color: string }) => {
     const updateGuess = () => {
         const guess = (document.querySelector('input') as HTMLInputElement).value;
         if (guesses.length < 5) {
+            compareAnswers(clue.answer, guess.toUpperCase());
             setGuesses([...guesses, guess]);
         }
     }
