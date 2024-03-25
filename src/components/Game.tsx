@@ -6,7 +6,7 @@ import {
 import { Clue } from "../types";
 import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
 import { useEffect, useState } from "react";
-import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon } from "@chakra-ui/icons";
+import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import { checkColor, mapColor, compareAnswers } from "../utils";
 
 const Game = (props: { color: string }) => {
@@ -33,6 +33,7 @@ const Game = (props: { color: string }) => {
     const [rated, setRated] = useState<boolean>(false);
     const [curGuess, setCurGuess] = useState<string>('');
     const [gameEnd, setGameEnd] = useState<boolean>(false);
+    const [win, setWin] = useState<boolean>(false);
 
     const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
@@ -49,6 +50,7 @@ const Game = (props: { color: string }) => {
                 setGuesses(data.guesses);
                 setScores(data.scores);
                 if (data.guesses.length === 5) {
+                    
                     handleEnd();
                 }
             }
@@ -264,7 +266,7 @@ const Game = (props: { color: string }) => {
                                 </ModalBody>
 
                                 <ModalFooter>
-                                    <Button colorScheme='blue' mr={3} onClick={shareStats}>
+                                    <Button leftIcon={<ExternalLinkIcon/>} colorScheme='blue' mr={1} onClick={shareStats}>
                                         Share
                                     </Button>
                                 </ModalFooter>
