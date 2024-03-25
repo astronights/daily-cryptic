@@ -1,3 +1,28 @@
+export const mapColor = (score: number) => {
+    switch (score) {
+        case 0:
+            return 'yellow';
+        case 1:
+            return 'purple';
+        case 2:
+            return 'green';
+        case -1:
+            return 'none';
+    }
+}
+
+export const checkColor = (score: number[]) => {
+    if (score.every((val) => val === 2)) {
+        return 'green';
+    } else if (score.every((val) => val > 0)) {
+        return 'purple';
+    } else if (score.every((val) => val >= 0)) {
+        return 'yellow';
+    } else {
+        return 'blue';
+    }
+}
+
 export const compareAnswers = (answer: string, guess: string): [string[], number[][]] => {
 
     const answerWords = answer.split(' ');

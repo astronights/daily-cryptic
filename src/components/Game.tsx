@@ -1,13 +1,13 @@
 import {
     Box, Heading, Container, Text, Button, Stack, CardBody, Card, CardHeader,
     StackDivider, Flex, Spacer, Link, CircularProgress, CircularProgressLabel,
-    Input, HStack, Badge, Divider
+    Input, HStack, Badge, Divider, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay
 } from "@chakra-ui/react";
 import { Clue } from "../types";
 import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
 import { useEffect, useState } from "react";
 import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon } from "@chakra-ui/icons";
-import { compareAnswers } from "../utils";
+import { checkColor, mapColor, compareAnswers } from "../utils";
 
 const Game = (props: { color: string }) => {
 
@@ -32,21 +32,31 @@ const Game = (props: { color: string }) => {
     const [scores, setScores] = useState<number[][][]>([]);
     const [rated, setRated] = useState<boolean>(false);
     const [curGuess, setCurGuess] = useState<string>('');
+    const [gameEnd, setGameEnd] = useState<boolean>(false);
 
     const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
     useEffect(() => {
+        console.log('Setting Up!')
         getDailyClue().then((clue) => {
             setClue({
                 ...clue,
                 answer: clue.answer.toUpperCase().split(/[^A-Z]/).filter(word => word.length > 0).join(' ')
             });
-            let raw_rating = clue.score * 0.1 + 3.0;
-            setRating(raw_rating > 5.0 ? 5.0 : (raw_rating < 0.0 ? 0.0 : raw_rating));
+            setRating(Math.min(Math.max(clue.score * 0.1 + 3.0, 0.0), 5.0));
+            const data = JSON.parse(localStorage.getItem("cryptle_cur"));
+            if (data && data.clue.rowid === clue.rowid && data.guesses.length > 0) {
+                setGuesses(data.guesses);
+                setScores(data.scores);
+                if (data.guesses.length === 5) {
+                    handleEnd();
+                }
+            }
         });
         getNthDay().then((nthday) => {
             setNthDay(nthday);
         });
+
     }, []);
 
     const triggerDef = () => {
@@ -68,40 +78,27 @@ const Game = (props: { color: string }) => {
         setCurGuess(e.target.value.replace(/[^A-Za-z ]/g, '').toUpperCase());
     }
 
+    const handleEnd = () => {
+        setGameEnd(true);
+    }
+
     const updateGuess = () => {
         const guess = (document.getElementById('guess') as HTMLInputElement).value;
-        if (guesses.length < 5) {
-            const scoredGuesses = compareAnswers(clue.answer, guess.toUpperCase());
-            const guessWords = scoredGuesses[0];
-            const guessScores = scoredGuesses[1];
-            setGuesses([...guesses, guessWords]);
-            setScores([...scores, guessScores]);
+        const scoredGuesses = compareAnswers(clue.answer, guess.toUpperCase());
+        const guessWords = scoredGuesses[0];
+        const guessScores = scoredGuesses[1];
+        setGuesses([...guesses, guessWords]);
+        setScores([...scores, guessScores]);
+        localStorage.setItem("cryptle_cur",
+            JSON.stringify({ guesses: [...guesses, guessWords], scores: [...scores, guessScores], clue }));
+
+        if (guesses.length === 5) {
+            handleEnd()
         }
     }
 
-    const mapColor = (score: number) => {
-        switch (score) {
-            case 0:
-                return 'yellow';
-            case 1:
-                return 'purple';
-            case 2:
-                return 'green';
-            case -1:
-                return 'none';
-        }
-    }
-
-    const checkColor = (score: number[]) => {
-        if (score.every((val) => val === 2)) {
-            return 'green';
-        } else if (score.every((val) => val > 0)) {
-            return 'purple';
-        } else if (score.every((val) => val >= 0)) {
-            return 'yellow';
-        } else {
-            return 'blue';
-        }
+    const shareStats = () => {
+        setGameEnd(false);
     }
 
     return (
@@ -122,7 +119,7 @@ const Game = (props: { color: string }) => {
                                 <Spacer />
                                 <Stack direction={'row'}>
                                     <CalendarIcon />
-                                    <Heading fontSize='md'>{clue.puzzle_date.toDateString()}</Heading>
+                                    <Heading fontSize='md'>{today.toDateString()}</Heading>
                                 </Stack>
                             </Flex>
                         </CardHeader>
@@ -137,14 +134,14 @@ const Game = (props: { color: string }) => {
                                         </Heading>
                                     </Stack>
                                     <HStack>
-                                    <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                        {clue.clue.replace(countRegex, '')}
-                                    </Text>
-                                    <Text textAlign={'left'} as='i' pt='2' fontSize='sm'>
-                                        *{clue.clue.search(countRegex) !== -1 ? clue.clue.slice(clue.clue.search(countRegex)-1) : ''}
-                                    </Text>
+                                        <Text textAlign={'left'} pt='2' fontSize='sm'>
+                                            {clue.clue.replace(countRegex, '')}
+                                        </Text>
+                                        <Text textAlign={'left'} as='i' pt='2' fontSize='sm'>
+                                            *{clue.clue.search(countRegex) !== -1 ? clue.clue.slice(clue.clue.search(countRegex) - 1) : ''}
+                                        </Text>
                                     </HStack>
-                                    
+
                                 </Box>
                                 <Box>
                                     <Stack direction={'row'} spacing='2'>
@@ -211,10 +208,10 @@ const Game = (props: { color: string }) => {
                                                         {guess.map((word, wix) => {
                                                             return word.split('').map((letter, lix) => {
                                                                 return lix === word.length - 1 ?
-                                                                <><Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge><>&nbsp;</></> :
-                                                                <Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge>
+                                                                    <><Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge><>&nbsp;</></> :
+                                                                    <Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge>
                                                             });
-                                                            
+
                                                         })}
                                                     </Stack>
                                                 </HStack>
@@ -222,14 +219,13 @@ const Game = (props: { color: string }) => {
                                         })
                                         }
                                     </Stack>
-
                                 </Stack>
                             </CardBody>
                         </Card>
                         <Card>
                             <CardHeader>
                                 <Heading textAlign={'left'} fontSize='md'>
-                                    Did You Like It ?
+                                    Did You Like Today's Puzzle ?
                                 </Heading>
                             </CardHeader>
                             <CardBody paddingTop={'1px'}>
@@ -257,6 +253,24 @@ const Game = (props: { color: string }) => {
                         </Card>
                     </Stack>
 
+                    <>
+
+                        <Modal isOpen={gameEnd} onClose={() => { }}>
+                            <ModalOverlay />
+                            <ModalContent>
+                                <ModalHeader>Modal Title</ModalHeader>
+                                <ModalCloseButton />
+                                <ModalBody>Hello here
+                                </ModalBody>
+
+                                <ModalFooter>
+                                    <Button colorScheme='blue' mr={3} onClick={shareStats}>
+                                        Share
+                                    </Button>
+                                </ModalFooter>
+                            </ModalContent>
+                        </Modal>
+                    </>
 
 
                 </Stack>
