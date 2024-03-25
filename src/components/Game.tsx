@@ -50,7 +50,7 @@ const Game = (props: { color: string }) => {
                 setGuesses(data.guesses);
                 setScores(data.scores);
                 if (data.guesses.length === 5) {
-                    
+
                     handleEnd();
                 }
             }
@@ -227,7 +227,7 @@ const Game = (props: { color: string }) => {
                         <Card>
                             <CardHeader>
                                 <Heading textAlign={'left'} fontSize='md'>
-                                    Did You Like Today's Puzzle ?
+                                    Did You Like Today&apos;s Puzzle ?
                                 </Heading>
                             </CardHeader>
                             <CardBody paddingTop={'1px'}>
