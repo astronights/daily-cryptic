@@ -7,7 +7,7 @@ import { Clue } from "../types";
 import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
 import { useEffect, useState } from "react";
 import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon } from "@chakra-ui/icons";
-import { italicizeRegex, compareAnswers } from "../utils";
+import { compareAnswers } from "../utils";
 
 const Game = (props: { color: string }) => {
 
@@ -28,12 +28,19 @@ const Game = (props: { color: string }) => {
     const [nthDay, setNthDay] = useState<number>();
     const [def, setDef] = useState<boolean>(false);
     const [rating, setRating] = useState<number>(0.0);
-    const [guesses, setGuesses] = useState<string[]>([]);
-    const [rated, setRated] = useState<boolean>(true); //TODO: Change before deployment
+    const [guesses, setGuesses] = useState<string[][]>([]);
+    const [scores, setScores] = useState<number[][][]>([]);
+    const [rated, setRated] = useState<boolean>(false);
+    const [curGuess, setCurGuess] = useState<string>('');
+
+    const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
     useEffect(() => {
         getDailyClue().then((clue) => {
-            setClue(clue);
+            setClue({
+                ...clue,
+                answer: clue.answer.toUpperCase().split(/[^A-Z]/).filter(word => word.length > 0).join(' ')
+            });
             let raw_rating = clue.score * 0.1 + 3.0;
             setRating(raw_rating > 5.0 ? 5.0 : (raw_rating < 0.0 ? 0.0 : raw_rating));
         });
@@ -57,11 +64,43 @@ const Game = (props: { color: string }) => {
         }
     }
 
+    const handleChange = (e: any) => {
+        setCurGuess(e.target.value.replace(/[^A-Za-z ]/g, '').toUpperCase());
+    }
+
     const updateGuess = () => {
-        const guess = (document.querySelector('input') as HTMLInputElement).value;
+        const guess = (document.getElementById('guess') as HTMLInputElement).value;
         if (guesses.length < 5) {
-            compareAnswers(clue.answer, guess.toUpperCase());
-            setGuesses([...guesses, guess]);
+            const scoredGuesses = compareAnswers(clue.answer, guess.toUpperCase());
+            const guessWords = scoredGuesses[0];
+            const guessScores = scoredGuesses[1];
+            setGuesses([...guesses, guessWords]);
+            setScores([...scores, guessScores]);
+        }
+    }
+
+    const mapColor = (score: number) => {
+        switch (score) {
+            case 0:
+                return 'yellow';
+            case 1:
+                return 'purple';
+            case 2:
+                return 'green';
+            case -1:
+                return 'none';
+        }
+    }
+
+    const checkColor = (score: number[]) => {
+        if (score.every((val) => val === 2)) {
+            return 'green';
+        } else if (score.every((val) => val > 0)) {
+            return 'purple';
+        } else if (score.every((val) => val >= 0)) {
+            return 'yellow';
+        } else {
+            return 'blue';
         }
     }
 
@@ -97,9 +136,15 @@ const Game = (props: { color: string }) => {
                                             Clue
                                         </Heading>
                                     </Stack>
+                                    <HStack>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                        {italicizeRegex(clue.clue, '\\([0-9\\W]+\\)$')}
+                                        {clue.clue.replace(countRegex, '')}
                                     </Text>
+                                    <Text textAlign={'left'} as='i' pt='2' fontSize='sm'>
+                                        *{clue.clue.search(countRegex) !== -1 ? clue.clue.slice(clue.clue.search(countRegex)-1) : ''}
+                                    </Text>
+                                    </HStack>
+                                    
                                 </Box>
                                 <Box>
                                     <Stack direction={'row'} spacing='2'>
@@ -149,7 +194,7 @@ const Game = (props: { color: string }) => {
                                                 return <Badge fontSize={'inherit'} key={index} colorScheme='blue'>{word.length}</Badge>
                                             })}
                                         </Stack>
-                                        <Input width={'750px'} placeholder='Guess!' isDisabled={guesses.length == 5} />
+                                        <Input width={'750px'} id='guess' placeholder='Guess!' value={curGuess} onChange={handleChange} isDisabled={guesses.length == 5} />
                                         <Button variant='outline' onClick={updateGuess} isDisabled={guesses.length == 5}>Submit</Button>
                                     </HStack>
                                     <Divider />
@@ -158,11 +203,20 @@ const Game = (props: { color: string }) => {
                                             return (
                                                 <HStack key={index} direction='row'>
                                                     <Stack direction={'row'}>
-                                                        {clue.answer.split(' ').map((word, index) => {
-                                                            return <Badge fontSize={'inherit'} key={index} colorScheme='blue'>{word.length}</Badge>
+                                                        {clue.answer.split(' ').map((word, wix) => {
+                                                            return <Badge fontSize={'inherit'} key={wix} colorScheme={checkColor(scores[index][wix])}>{word.length}</Badge>
                                                         })}
                                                     </Stack>
-                                                    <Text paddingLeft={'16px'}>{guess}</Text>
+                                                    <Stack direction={'row'} paddingLeft={'16px'} spacing={'0px'}>
+                                                        {guess.map((word, wix) => {
+                                                            return word.split('').map((letter, lix) => {
+                                                                return lix === word.length - 1 ?
+                                                                <><Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge><>&nbsp;</></> :
+                                                                <Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge>
+                                                            });
+                                                            
+                                                        })}
+                                                    </Stack>
                                                 </HStack>
                                             )
                                         })
