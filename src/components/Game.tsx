@@ -50,8 +50,7 @@ const Game = (props: { color: string }) => {
                 setGuesses(data.guesses);
                 setScores(data.scores);
                 if (data.guesses.length === 5) {
-
-                    handleEnd();
+                    checkWin();
                 }
             }
         });
@@ -80,8 +79,16 @@ const Game = (props: { color: string }) => {
         setCurGuess(e.target.value.replace(/[^A-Za-z ]/g, '').toUpperCase());
     }
 
-    const handleEnd = () => {
-        setGameEnd(true);
+    const checkWin = () => {
+        const flatAnswer = clue.answer.replace(/[^A-Z]/g, '');
+        const flatGuess = guesses[-1].join('').toUpperCase().replace(/[^A-Z]/g, '');
+        if (flatAnswer === flatGuess) {
+            setWin(true);
+            setGameEnd(true);
+        }
+        if (guesses.length === 5) {
+            setGameEnd(true);
+        }
     }
 
     const updateGuess = () => {
@@ -95,7 +102,7 @@ const Game = (props: { color: string }) => {
             JSON.stringify({ guesses: [...guesses, guessWords], scores: [...scores, guessScores], clue }));
 
         if (guesses.length === 5) {
-            handleEnd()
+            checkWin();
         }
     }
 
