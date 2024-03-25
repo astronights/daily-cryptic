@@ -59,6 +59,10 @@ const Game = (props: { color: string }) => {
                 setGuesses(data.guesses);
                 setScores(data.scores);
                 checkWin(clue.answer, data.guesses[data.guesses.length - 1]);
+                if (data.guesses.length === 5) {
+                    setGameEnd(true);
+                    setStats(true);
+                }
             }
             setOldStats(JSON.parse(localStorage.getItem("cryptle_stats")) || [0, 0, 0, 0, 0, 0]);
         });
