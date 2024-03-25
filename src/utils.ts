@@ -23,6 +23,14 @@ export const checkColor = (score: number[]) => {
     }
 }
 
+export const getShareScores = (edition: number, hint: boolean, scores: number[][][]) => {
+    const solved = scores[scores.length - 1].every((word) => word.every((letter) => letter === 2));
+    const emojis = ['🔵','🟡', '🟣', '🟢'] ;
+    const colors = scores.map((word) => word.map((letter) => emojis[Math.min(...letter)+1]));
+    console.log(colors);
+    return "Cryptle #" + edition + ' ' + (solved ? scores.length : 'X') + '/5' + (hint ? '*' : '') + '\n\n' + colors.map((word) => word.join('')).join('\n') + '\n\n' + 'https://daily-cryptic.vercel.app/';
+}
+
 export const compareAnswers = (answer: string, guess: string): [string[], number[][]] => {
 
     const answerWords = answer.split(' ');

@@ -1,14 +1,21 @@
 import {
     Box, Heading, Container, Text, Button, Stack, CardBody, Card, CardHeader,
     StackDivider, Flex, Spacer, Link, CircularProgress, CircularProgressLabel,
-    Input, HStack, Badge, Divider, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay
+    Input, HStack, Badge, Divider, Modal, ModalBody, ModalCloseButton, ModalContent,
+    ModalFooter, ModalHeader, ModalOverlay
 } from "@chakra-ui/react";
+import {
+    CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon,
+    CheckIcon, ExternalLinkIcon, CopyIcon
+} from "@chakra-ui/icons";
 import { BarChart } from '@saas-ui/charts'
 import { Clue } from "../types";
 import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
 import { useEffect, useState } from "react";
-import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon, ExternalLinkIcon, CopyIcon } from "@chakra-ui/icons";
-import { checkColor, mapColor, compareAnswers } from "../utils";
+
+import { checkColor, mapColor, getShareScores, compareAnswers } from "../utils";
+import copy from 'copy-to-clipboard';
+
 
 const Game = (props: { color: string }) => {
 
@@ -41,7 +48,6 @@ const Game = (props: { color: string }) => {
     const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
     useEffect(() => {
-        console.log('Setting Up!')
         getDailyClue().then((clue) => {
             setClue({
                 ...clue,
@@ -84,7 +90,6 @@ const Game = (props: { color: string }) => {
     const checkWin = (answer: string, latestGuess: string[]) => {
         const flatAnswer = answer.replace(/[^A-Z]/g, '');
         const flatGuess = latestGuess.join('').toUpperCase().replace(/[^A-Z]/g, '');
-        console.log(flatAnswer, flatGuess)
         if (flatAnswer === flatGuess) {
             setWin(true);
             setGameEnd(true);
@@ -124,12 +129,21 @@ const Game = (props: { color: string }) => {
     }
 
     const shareStats = () => {
-        setStats(false);
+        const scoresToCopy = getShareScores(nthDay, def, scores);
+
     }
 
     const copyStats = () => {
-        
+        const scoresToCopy = getShareScores(nthDay, def, scores);
+        copy(scoresToCopy);
     }
+
+    // Small hack to get rid of temporary unfixed bug in SAAS UI
+    const error = console.error;
+    console.error = (...args: any) => {
+        if (/defaultProps/.test(args[0])) return;
+        error(...args);
+    };
 
     return (
         <>
@@ -316,7 +330,7 @@ const Game = (props: { color: string }) => {
                                     <Button leftIcon={<ExternalLinkIcon />} colorScheme='blue' mr={1} onClick={shareStats}>
                                         Share
                                     </Button>
-                                    <Button leftIcon={<CopyIcon/>} colorScheme='blue' mr={1} onClick={copyStats}>
+                                    <Button leftIcon={<CopyIcon />} colorScheme='blue' mr={1} onClick={copyStats}>
                                         Copy Results
                                     </Button>
                                 </ModalFooter>
