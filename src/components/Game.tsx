@@ -3,10 +3,11 @@ import {
     StackDivider, Flex, Spacer, Link, CircularProgress, CircularProgressLabel,
     Input, HStack, Badge, Divider, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay
 } from "@chakra-ui/react";
+import { BarChart } from '@saas-ui/charts'
 import { Clue } from "../types";
 import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
 import { useEffect, useState } from "react";
-import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon, ExternalLinkIcon } from "@chakra-ui/icons";
+import { CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon, CheckIcon, ExternalLinkIcon, CopyIcon } from "@chakra-ui/icons";
 import { checkColor, mapColor, compareAnswers } from "../utils";
 
 const Game = (props: { color: string }) => {
@@ -34,6 +35,8 @@ const Game = (props: { color: string }) => {
     const [curGuess, setCurGuess] = useState<string>('');
     const [gameEnd, setGameEnd] = useState<boolean>(false);
     const [win, setWin] = useState<boolean>(false);
+    const [stats, setStats] = useState<boolean>(false);
+    const [oldStats, setOldStats] = useState<number[]>([0, 0, 0, 0, 0, 0]);
 
     const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
@@ -49,10 +52,9 @@ const Game = (props: { color: string }) => {
             if (data && data.clue.rowid === clue.rowid && data.guesses.length > 0) {
                 setGuesses(data.guesses);
                 setScores(data.scores);
-                if (data.guesses.length === 5) {
-                    checkWin();
-                }
+                checkWin(clue.answer, data.guesses[data.guesses.length - 1]);
             }
+            setOldStats(JSON.parse(localStorage.getItem("cryptle_stats")) || [0, 0, 0, 0, 0, 0]);
         });
         getNthDay().then((nthday) => {
             setNthDay(nthday);
@@ -79,20 +81,27 @@ const Game = (props: { color: string }) => {
         setCurGuess(e.target.value.replace(/[^A-Za-z ]/g, '').toUpperCase());
     }
 
-    const checkWin = () => {
-        const flatAnswer = clue.answer.replace(/[^A-Z]/g, '');
-        const flatGuess = guesses[-1].join('').toUpperCase().replace(/[^A-Z]/g, '');
+    const checkWin = (answer: string, latestGuess: string[]) => {
+        const flatAnswer = answer.replace(/[^A-Z]/g, '');
+        const flatGuess = latestGuess.join('').toUpperCase().replace(/[^A-Z]/g, '');
+        console.log(flatAnswer, flatGuess)
         if (flatAnswer === flatGuess) {
             setWin(true);
             setGameEnd(true);
+            setStats(true);
         }
         if (guesses.length === 5) {
             setGameEnd(true);
+            setStats(true);
         }
     }
 
     const updateGuess = () => {
+        const isLastGuess = guesses.length === 4;
         const guess = (document.getElementById('guess') as HTMLInputElement).value;
+        if (guess.trim().length === 0) {
+            return;
+        }
         const scoredGuesses = compareAnswers(clue.answer, guess.toUpperCase());
         const guessWords = scoredGuesses[0];
         const guessScores = scoredGuesses[1];
@@ -100,14 +109,26 @@ const Game = (props: { color: string }) => {
         setScores([...scores, guessScores]);
         localStorage.setItem("cryptle_cur",
             JSON.stringify({ guesses: [...guesses, guessWords], scores: [...scores, guessScores], clue }));
-
-        if (guesses.length === 5) {
-            checkWin();
+        checkWin(clue.answer, guessWords);
+        if (guessScores.flat().every((val) => val === 2)) {
+            setOldStats(oldStats.map((val, ix) => ix === guesses.length ? val + 1 : val));
+            localStorage.setItem("cryptle_stats", JSON.stringify(oldStats.map((val, ix) => ix === guesses.length ? val + 1 : val)));
         }
+        if (isLastGuess) {
+            setGameEnd(true);
+            setStats(true);
+            setOldStats([...oldStats.slice(0, 5), oldStats[5] + 1]);
+            localStorage.setItem("cryptle_stats", JSON.stringify([...oldStats.slice(0, 5), oldStats[5] + 1]));
+        }
+        setCurGuess('');
     }
 
     const shareStats = () => {
-        setGameEnd(false);
+        setStats(false);
+    }
+
+    const copyStats = () => {
+        
     }
 
     return (
@@ -200,12 +221,13 @@ const Game = (props: { color: string }) => {
                                                 return <Badge fontSize={'inherit'} key={index} colorScheme='blue'>{word.length}</Badge>
                                             })}
                                         </Stack>
-                                        <Input width={'750px'} id='guess' placeholder='Guess!' value={curGuess} onChange={handleChange} isDisabled={guesses.length == 5} />
-                                        <Button variant='outline' onClick={updateGuess} isDisabled={guesses.length == 5}>Submit</Button>
+                                        <Input width={'750px'} id='guess' placeholder='Guess!' value={curGuess} onKeyUp={(e) => e.key === 'Enter' ? updateGuess() : {}} onChange={handleChange} isDisabled={gameEnd} />
+                                        <Button variant='outline' onClick={updateGuess} isDisabled={gameEnd}>Submit</Button>
                                     </HStack>
                                     <Divider />
                                     <Stack>
-                                        {guesses.map((guess, index) => {
+                                        {guesses.toReversed().map((guess, revix) => {
+                                            const index = guesses.length - revix - 1;
                                             return (
                                                 <HStack key={index} direction='row'>
                                                     <Stack direction={'row'}>
@@ -264,17 +286,38 @@ const Game = (props: { color: string }) => {
 
                     <>
 
-                        <Modal isOpen={gameEnd} onClose={() => { }}>
+                        <Modal isOpen={stats} onClose={() => { setStats(false) }}>
                             <ModalOverlay />
                             <ModalContent>
-                                <ModalHeader>Modal Title</ModalHeader>
+                                <ModalHeader>{win ? 'Congratulations!' : 'Better Luck Tomorrow..'}</ModalHeader>
                                 <ModalCloseButton />
-                                <ModalBody>Hello here
+                                <ModalBody>
+                                    <Text>
+                                        {win ? 'You have solved today\'s puzzle in ' + guesses.length + (guesses.length > 1 ? ' guesses! ' : ' guess! ') : 'You ran out of guesses. :( '}
+                                        The correct answer was {clue.answer}!
+                                    </Text>
+                                    <BarChart
+                                        data={
+                                            oldStats
+                                                .map((val, ix) => {
+                                                    return {
+                                                        date: ix < 5 ? (ix + 1) : 'X',
+                                                        Solved: val,
+                                                    }
+                                                })}
+                                        categories={['Solved']}
+                                        colors={['green', 'blue', 'red']}
+                                        variant="solid"
+                                        height="300px"
+                                    />
                                 </ModalBody>
 
                                 <ModalFooter>
-                                    <Button leftIcon={<ExternalLinkIcon/>} colorScheme='blue' mr={1} onClick={shareStats}>
+                                    <Button leftIcon={<ExternalLinkIcon />} colorScheme='blue' mr={1} onClick={shareStats}>
                                         Share
+                                    </Button>
+                                    <Button leftIcon={<CopyIcon/>} colorScheme='blue' mr={1} onClick={copyStats}>
+                                        Copy Results
                                     </Button>
                                 </ModalFooter>
                             </ModalContent>
