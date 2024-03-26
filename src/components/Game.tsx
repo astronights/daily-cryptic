@@ -1,5 +1,3 @@
-'use client';
-
 import {
     Box, Heading, Container, Text, Button, Stack, CardBody, Card, CardHeader,
     StackDivider, Flex, Spacer, Link, CircularProgress, CircularProgressLabel,
@@ -202,7 +200,7 @@ const Game = (props: { color: string }) => {
                                     </Stack>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
                                         <Link isExternal href={clue.source_url}>
-                                            {clue.puzzle_name} ({clue.puzzle_date.toDateString()})
+                                            {clue.puzzle_name} ({clue ? clue.puzzle_date.toDateString() : ''})
                                         </Link>
                                     </Text>
                                 </Box>
