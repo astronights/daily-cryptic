@@ -18,20 +18,7 @@ import copy from 'copy-to-clipboard';
 
 
 const Game = (props: { color: string }) => {
-
-    const [clue, setClue] = useState<Clue>({
-        rowid: 0,
-        clue: "",
-        answer: "",
-        definition: "",
-        puzzle_date: new Date(),
-        puzzle_name: "",
-        source_url: "",
-        source: "",
-        score: 0,
-        date_used: new Date(),
-
-    });
+    const [today, setToday] = useState(new Date());
     const [nthDay, setNthDay] = useState<number>();
     const [def, setDef] = useState<boolean>(false);
     const [rating, setRating] = useState<number>(0.0);
@@ -43,6 +30,19 @@ const Game = (props: { color: string }) => {
     const [win, setWin] = useState<boolean>(false);
     const [stats, setStats] = useState<boolean>(false);
     const [oldStats, setOldStats] = useState<number[]>([0, 0, 0, 0, 0, 0]);
+
+    const [clue, setClue] = useState<Clue>({
+        rowid: 0,
+        clue: "",
+        answer: "",
+        definition: "",
+        puzzle_date: today,
+        puzzle_name: "",
+        source_url: "",
+        source: "",
+        score: 0,
+        date_used: today,
+    });
 
     const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
@@ -167,7 +167,7 @@ const Game = (props: { color: string }) => {
                                 <Spacer />
                                 <Stack direction={'row'}>
                                     <CalendarIcon />
-                                    <Heading fontSize='md'>{new Date().toLocaleDateString()}</Heading>
+                                    <Heading fontSize='md'>{today.toDateString()}</Heading>
                                 </Stack>
                             </Flex>
                         </CardHeader>
@@ -200,7 +200,7 @@ const Game = (props: { color: string }) => {
                                     </Stack>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
                                         <Link isExternal href={clue.source_url}>
-                                            {clue.puzzle_name} ({clue.puzzle_date.toLocaleDateString()})
+                                            {clue.puzzle_name} ({clue.puzzle_date.toDateString()})
                                         </Link>
                                     </Text>
                                 </Box>
