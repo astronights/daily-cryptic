@@ -167,7 +167,7 @@ const Game = (props: { color: string }) => {
                                 <Spacer />
                                 <Stack direction={'row'}>
                                     <CalendarIcon />
-                                    <Heading fontSize='md'>{new Date().toDateString()}</Heading>
+                                    <Heading fontSize='md'>{new Date().toLocaleDateString()}</Heading>
                                 </Stack>
                             </Flex>
                         </CardHeader>
@@ -200,7 +200,7 @@ const Game = (props: { color: string }) => {
                                     </Stack>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
                                         <Link isExternal href={clue.source_url}>
-                                            {clue.puzzle_name} ({clue.puzzle_date.toDateString()})
+                                            {clue.puzzle_name} ({clue.puzzle_date.toLocaleDateString()})
                                         </Link>
                                     </Text>
                                 </Box>
