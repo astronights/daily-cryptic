@@ -73,10 +73,7 @@ const Game = (props: { color: string }) => {
     }, []);
 
     const triggerDef = () => {
-        if (clue.definition && clue.definition.length > 1) {
-            setDef(true);
-        }
-        
+        setDef(true);
     }
 
     const reRate = (e: any) => {
