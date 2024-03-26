@@ -167,7 +167,7 @@ const Game = (props: { color: string }) => {
                                 <Spacer />
                                 <Stack direction={'row'}>
                                     <CalendarIcon />
-                                    <Heading fontSize='md'>{today.toDateString()}</Heading>
+                                    <Heading fontSize='md'>{new Date().toDateString()}</Heading>
                                 </Stack>
                             </Flex>
                         </CardHeader>
