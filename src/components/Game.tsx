@@ -19,7 +19,6 @@ import copy from 'copy-to-clipboard';
 
 const Game = (props: { color: string }) => {
 
-    const today = new Date();
     const [clue, setClue] = useState<Clue>({
         rowid: 0,
         clue: "",
@@ -65,6 +64,7 @@ const Game = (props: { color: string }) => {
                 }
             }
             setOldStats(JSON.parse(localStorage.getItem("cryptle_stats")) || [0, 0, 0, 0, 0, 0]);
+            console.log(clue);
         });
         getNthDay().then((nthday) => {
             setNthDay(nthday);
