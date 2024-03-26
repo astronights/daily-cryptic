@@ -25,12 +25,12 @@ const Game = (props: { color: string }) => {
         clue: "",
         answer: "",
         definition: "",
-        puzzle_date: today,
+        puzzle_date: new Date(),
         puzzle_name: "",
         source_url: "",
         source: "",
         score: 0,
-        date_used: today,
+        date_used: new Date(),
 
     });
     const [nthDay, setNthDay] = useState<number>();
