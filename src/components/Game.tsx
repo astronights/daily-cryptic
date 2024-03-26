@@ -73,7 +73,10 @@ const Game = (props: { color: string }) => {
     }, []);
 
     const triggerDef = () => {
-        setDef(true);
+        if (clue.definition && clue.definition.length > 1) {
+            setDef(true);
+        }
+        
     }
 
     const reRate = (e: any) => {
@@ -214,7 +217,7 @@ const Game = (props: { color: string }) => {
                                         </Button>
                                     </Stack>
                                     <Text display={def ? 'block' : 'none'} textAlign={'left'} pt='2' fontSize='sm'>
-                                        {clue.definition}
+                                        {clue.definition && clue.definition.length > 0 ? clue.definition : 'Sorry no hint!'}
                                     </Text>
                                 </Box>
                             </Stack>
