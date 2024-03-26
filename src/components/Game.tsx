@@ -64,7 +64,7 @@ const Game = (props: { color: string }) => {
                 }
             }
             setOldStats(JSON.parse(localStorage.getItem("cryptle_stats")) || [0, 0, 0, 0, 0, 0]);
-            console.log(clue);
+            console.log(clue, today);
         });
         getNthDay().then((nthday) => {
             setNthDay(nthday);
