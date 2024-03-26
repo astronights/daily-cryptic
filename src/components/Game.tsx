@@ -136,7 +136,7 @@ const Game = (props: { color: string }) => {
         const scoresToCopy = getShareScores(nthDay, def, scores);
         if (navigator.share) {
             navigator.share({
-                title: 'Share Cryptle',
+                title: 'Cryptle',
                 text: scoresToCopy,
                 url: 'https://daily-cryptic-iief.vercel.app/'
             })
