@@ -24,7 +24,7 @@ const NavBar = (props: NavProps) => {
         "teal": "#319795",
         "yellow": "#D69E2E"
     };
-    const isRendered = typeof window !== "undefined"
+    
     const [scroll, setScroll] = useState(false);
     const { colorMode, toggleColorMode } = useColorMode();
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -39,10 +39,9 @@ const NavBar = (props: NavProps) => {
             ? setScroll(true)
             : setScroll(false);
 
-    isRendered && window.addEventListener("scroll", changeScroll);
+    typeof window !== "undefined" && window.addEventListener("scroll", changeScroll);
 
-    const TbLetterComponents = (isRendered && window.visualViewport.width > 768) ?
-        'CRYPTLE'.split('').map((letter) => TbIcons[`TbLetter${letter}`]) : [];
+    const TbLetterComponents = 'CRYPTLE'.split('').map((letter) => TbIcons[`TbLetter${letter}`]);
 
     return (
         <>
