@@ -224,7 +224,7 @@ const Game = (props: { color: string }) => {
                                         </Button>
                                     </Stack>
                                     <Text display={def ? 'block' : 'none'} textAlign={'left'} pt='2' fontSize='sm'>
-                                        {clue.definition && clue.definition.length > 0 ? clue.definition : 'Sorry no hint!'}
+                                        {clue.definition && clue.definition.length > 0 ? clue.definition : 'No hint available.'}
                                     </Text>
                                 </Box>
                             </Stack>
@@ -291,7 +291,7 @@ const Game = (props: { color: string }) => {
                                 <HStack direction='row'>
                                     <Spacer />
                                     <Button id='minus' onClick={reRate} leftIcon={<TriangleDownIcon />} variant='outline'>
-                                        No..
+                                        No
                                     </Button>
                                     <Spacer />
                                     <HStack direction={'row'}>
@@ -304,7 +304,7 @@ const Game = (props: { color: string }) => {
 
                                     <Spacer />
                                     <Button id='plus' onClick={reRate} leftIcon={<TriangleUpIcon />} variant='outline'>
-                                        Yes!
+                                        Yes
                                     </Button>
                                     <Spacer />
                                 </HStack>
