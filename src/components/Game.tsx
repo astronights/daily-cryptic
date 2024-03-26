@@ -50,6 +50,7 @@ const Game = (props: { color: string }) => {
         getDailyClue().then((clue) => {
             setClue({
                 ...clue,
+                puzzle_date: new Date(clue.puzzle_date),
                 answer: clue.answer.toUpperCase().split(/[^A-Z]/).filter(word => word.length > 0).join(' ')
             });
             setRating(Math.min(Math.max(clue.score * 0.1 + 3.0, 0.0), 5.0));
