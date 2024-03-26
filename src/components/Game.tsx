@@ -5,8 +5,8 @@ import {
     ModalFooter, ModalHeader, ModalOverlay
 } from "@chakra-ui/react";
 import {
-    CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, CloseIcon,
-    CheckIcon, ExternalLinkIcon, CopyIcon
+    CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, TriangleUpIcon,
+    TriangleDownIcon, ExternalLinkIcon, CopyIcon, ArrowForwardIcon
 } from "@chakra-ui/icons";
 import { BarChart } from '@saas-ui/charts'
 import { Clue } from "../types";
@@ -64,7 +64,6 @@ const Game = (props: { color: string }) => {
                 }
             }
             setOldStats(JSON.parse(localStorage.getItem("cryptle_stats")) || [0, 0, 0, 0, 0, 0]);
-            console.log(clue, today);
         });
         getNthDay().then((nthday) => {
             setNthDay(nthday);
@@ -137,7 +136,7 @@ const Game = (props: { color: string }) => {
         if (navigator.share) {
             navigator.share({
                 title: 'Cryptle',
-                text: scoresToCopy,
+                text: scoresToCopy.replace('https://daily-cryptic-iief.vercel.app/', ''),
                 url: 'https://daily-cryptic-iief.vercel.app/'
             })
                 .then(() => console.log('Shared successfully'))
@@ -251,7 +250,7 @@ const Game = (props: { color: string }) => {
                                             })}
                                         </Stack>
                                         <Input width={'750px'} id='guess' placeholder='Guess!' value={curGuess} onKeyUp={(e) => e.key === 'Enter' ? updateGuess() : {}} onChange={handleChange} isDisabled={gameEnd} />
-                                        <Button variant='outline' onClick={updateGuess} isDisabled={gameEnd}>Submit</Button>
+                                        <Button variant='outline' onClick={updateGuess} isDisabled={gameEnd}>{(typeof window !== "undefined") && (window.visualViewport.width > 768) ? 'Submit' : <ArrowForwardIcon/>}</Button>
                                     </HStack>
                                     <Divider />
                                     <Stack>
@@ -291,7 +290,7 @@ const Game = (props: { color: string }) => {
                             <CardBody paddingTop={'1px'}>
                                 <HStack direction='row'>
                                     <Spacer />
-                                    <Button id='minus' onClick={reRate} leftIcon={<CloseIcon />} variant='outline'>
+                                    <Button id='minus' onClick={reRate} leftIcon={<TriangleDownIcon />} variant='outline'>
                                         No..
                                     </Button>
                                     <Spacer />
@@ -304,7 +303,7 @@ const Game = (props: { color: string }) => {
                                     </HStack>
 
                                     <Spacer />
-                                    <Button id='plus' onClick={reRate} leftIcon={<CheckIcon />} variant='outline'>
+                                    <Button id='plus' onClick={reRate} leftIcon={<TriangleUpIcon />} variant='outline'>
                                         Yes!
                                     </Button>
                                     <Spacer />
