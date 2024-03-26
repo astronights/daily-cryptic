@@ -134,6 +134,17 @@ const Game = (props: { color: string }) => {
 
     const shareStats = () => {
         const scoresToCopy = getShareScores(nthDay, def, scores);
+        if (navigator.share) {
+            navigator.share({
+                title: 'Share Cryptle',
+                text: scoresToCopy,
+                url: 'https://daily-cryptic-iief.vercel.app/'
+            })
+                .then(() => console.log('Shared successfully'))
+                .catch((error) => console.error('Error sharing:', error));
+        } else {
+            console.log('Web Share API not supported.');
+        }
 
     }
 
