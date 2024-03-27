@@ -36,7 +36,7 @@ const About = (props: { color: string }) => {
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
                                         A Data Scientist with a passion for machine learning, quizzing and solving puzzles.
                                         Most of my expertise lies in the data science stack working with Python, Hadoop, Spark, SQL and Machine Learning models.
-                                        If you'd like to talk more, feel free to drop me an  &nbsp;
+                                        If you&apos;d like to talk more, feel free to drop me an  &nbsp;
                                         <Link href='mailto:shubhankar.a31@gmail.com' color={props.color} isExternal>email</Link>
                                         &nbsp; here or connect with me on &nbsp; 
                                         <Link href='https://www.linkedin.com/in/shubhankar-agarwal/' color={props.color} isExternal>LinkedIn</Link> &nbsp;.
