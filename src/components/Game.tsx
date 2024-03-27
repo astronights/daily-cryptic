@@ -47,7 +47,8 @@ const Game = (props: { color: string }) => {
     const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
     useEffect(() => {
-        today.setHours(0, 0, 0, 0);
+        today.setHours(today.getTimezoneOffset()/60, today.getTimezoneOffset()%60, 0, 0);
+        console.log(today);
         getDailyClue(today).then((clue) => {
             setClue({
                 ...clue,
