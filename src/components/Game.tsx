@@ -2,7 +2,7 @@ import {
     Box, Heading, Container, Text, Button, Stack, CardBody, Card, CardHeader,
     StackDivider, Flex, Spacer, Link, CircularProgress, CircularProgressLabel,
     Input, HStack, Badge, Divider, Modal, ModalBody, ModalCloseButton, ModalContent,
-    ModalFooter, ModalHeader, ModalOverlay, SkeletonText, SkeletonCircle
+    ModalFooter, ModalHeader, ModalOverlay, SkeletonText
 } from "@chakra-ui/react";
 import {
     CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, TriangleUpIcon,
@@ -47,7 +47,7 @@ const Game = (props: { color: string }) => {
     const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
     useEffect(() => {
-        today.setHours(Math.abs(today.getTimezoneOffset()/60), Math.abs(today.getTimezoneOffset()%60), 0, 0);
+        today.setHours(Math.abs(today.getTimezoneOffset() / 60), Math.abs(today.getTimezoneOffset() % 60), 0, 0);
         getDailyClue(today).then((clue) => {
             setClue({
                 ...clue,
@@ -171,10 +171,12 @@ const Game = (props: { color: string }) => {
                     pt={{ base: 24, md: 24 }}
                 >
                     <Card>
-                        <SkeletonCircle isLoaded={clue.answer != ''}>
+
                         <CardHeader>
                             <Flex>
-                                <Heading size='md'>Cryptle # {nthDay}</Heading>
+                                <SkeletonText isLoaded={clue.answer != ''}>
+                                    <Heading size='md'>Cryptle # {nthDay}</Heading>
+                                </SkeletonText>
                                 <Spacer />
                                 <Stack direction={'row'}>
                                     <CalendarIcon />
@@ -182,7 +184,7 @@ const Game = (props: { color: string }) => {
                                 </Stack>
                             </Flex>
                         </CardHeader>
-                        </SkeletonCircle>
+
 
                         <CardBody>
                             <Stack divider={<StackDivider />} spacing='4'>
@@ -193,15 +195,15 @@ const Game = (props: { color: string }) => {
                                             Clue
                                         </Heading>
                                     </Stack>
-                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1}>
-                                    <HStack>
-                                        <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                            {clue.clue.replace(countRegex, '')}
-                                        </Text>
-                                        <Text textAlign={'left'} as='i' pt='2' fontSize='sm'>
-                                            {clue.clue.search(countRegex) !== -1 ? '*' + clue.clue.slice(clue.clue.search(countRegex) - 1) : ''}
-                                        </Text>
-                                    </HStack>
+                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1} mt={1}>
+                                        <HStack>
+                                            <Text textAlign={'left'} pt='2' fontSize='sm'>
+                                                {clue.clue.replace(countRegex, '')}
+                                            </Text>
+                                            <Text textAlign={'left'} as='i' pt='2' fontSize='sm'>
+                                                {clue.clue.search(countRegex) !== -1 ? '*' + clue.clue.slice(clue.clue.search(countRegex) - 1) : ''}
+                                            </Text>
+                                        </HStack>
                                     </SkeletonText>
 
                                 </Box>
@@ -212,12 +214,12 @@ const Game = (props: { color: string }) => {
                                             Source
                                         </Heading>
                                     </Stack>
-                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1}>
-                                    <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                        <Link isExternal href={clue.source_url}>
-                                            {clue.puzzle_name} {clue.puzzle_date ? '(' + clue.puzzle_date.toDateString() + ')' : ''}
-                                        </Link>
-                                    </Text>
+                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1} mt={1}>
+                                        <Text textAlign={'left'} pt='2' fontSize='sm'>
+                                            <Link isExternal href={clue.source_url}>
+                                                {clue.puzzle_name} {clue.puzzle_date ? '(' + clue.puzzle_date.toDateString() + ')' : ''}
+                                            </Link>
+                                        </Text>
                                     </SkeletonText>
                                 </Box>
                                 <Box alignItems={'start'}>
@@ -256,7 +258,7 @@ const Game = (props: { color: string }) => {
                                             })}
                                         </Stack>
                                         <Input width={'750px'} id='guess' placeholder='Guess!' value={curGuess} onKeyUp={(e) => e.key === 'Enter' ? updateGuess() : {}} onChange={handleChange} isDisabled={gameEnd} />
-                                        <Button variant='outline' onClick={updateGuess} isDisabled={gameEnd}>{(typeof window !== "undefined") && (window.visualViewport.width > 768) ? 'Submit' : <ArrowForwardIcon/>}</Button>
+                                        <Button variant='outline' onClick={updateGuess} isDisabled={gameEnd}>{(typeof window !== "undefined") && (window.visualViewport.width > 768) ? 'Submit' : <ArrowForwardIcon />}</Button>
                                     </HStack>
                                     <Divider />
                                     <Stack>
