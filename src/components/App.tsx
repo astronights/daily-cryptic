@@ -11,14 +11,14 @@ const App = () => {
   const color = "teal";
   const [page, setPage] = useState("game");
 
+
   return (
     <>
       <NavBar color={color} updatePage={setPage} />
 
-      {page === "game" && <Game color={color} />}
+      {page === "game" && <Game color={color} updatePage={setPage}/>}
       {page === "about" && <About color={color} />}
-      {page === "rules" && <Rules color={color} />}
-      {/* <Footer /> */}
+      {page === "rules" && <Rules color={color}/>}
     </>
   );
 }

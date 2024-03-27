@@ -6,7 +6,7 @@ import {
 } from "@chakra-ui/react";
 import {
     CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, TriangleUpIcon,
-    TriangleDownIcon, ExternalLinkIcon, CopyIcon, ArrowForwardIcon
+    TriangleDownIcon, ExternalLinkIcon, CopyIcon, ArrowForwardIcon, QuestionOutlineIcon
 } from "@chakra-ui/icons";
 import { BarChart } from '@saas-ui/charts'
 import { Clue } from "../types";
@@ -17,7 +17,7 @@ import { checkColor, mapColor, getShareScores, compareAnswers } from "../utils";
 import copy from 'copy-to-clipboard';
 
 
-const Game = (props: { color: string }) => {
+const Game = (props: { color: string, updatePage?: any;}) => {
     const [today, setToday] = useState(new Date());
     const [nthDay, setNthDay] = useState<number>();
     const [def, setDef] = useState<boolean>(false);
@@ -195,7 +195,7 @@ const Game = (props: { color: string }) => {
                                             Clue
                                         </Heading>
                                     </Stack>
-                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1} mt={1}>
+                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1} mt={2}>
                                         <HStack>
                                             <Text textAlign={'left'} pt='2' fontSize='sm'>
                                                 {clue.clue.replace(countRegex, '')}
@@ -214,7 +214,7 @@ const Game = (props: { color: string }) => {
                                             Source
                                         </Heading>
                                     </Stack>
-                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1} mt={1}>
+                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1} mt={2}>
                                         <Text textAlign={'left'} pt='2' fontSize='sm'>
                                             <Link isExternal href={clue.source_url}>
                                                 {clue.puzzle_name} {clue.puzzle_date ? '(' + clue.puzzle_date.toDateString() + ')' : ''}
@@ -245,9 +245,13 @@ const Game = (props: { color: string }) => {
                         spacing={{ base: 6, md: 6 }}>
                         <Card>
                             <CardHeader>
+                                <Flex>
                                 <Heading textAlign={'left'} fontSize='md'>
                                     Guess ! ({5 - guesses.length} Remaining)
                                 </Heading>
+                                <Spacer />
+                                <Button leftIcon={<QuestionOutlineIcon/>} size={'sm'} onClick={_ => props.updatePage('rules')} iconSpacing={0} variant='outline' />
+                                </Flex>
                             </CardHeader>
                             <CardBody>
                                 <Stack>
