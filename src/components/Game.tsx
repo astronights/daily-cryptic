@@ -36,7 +36,7 @@ const Game = (props: { color: string }) => {
         clue: "",
         answer: "",
         definition: "",
-        puzzle_date: today,
+        puzzle_date: null,
         puzzle_name: "",
         source_url: "",
         source: "",
@@ -47,7 +47,8 @@ const Game = (props: { color: string }) => {
     const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
     useEffect(() => {
-        getDailyClue().then((clue) => {
+        today.setHours(0, 0, 0, 0);
+        getDailyClue(today).then((clue) => {
             setClue({
                 ...clue,
                 answer: clue.answer.toUpperCase().split(/[^A-Z]/).filter(word => word.length > 0).join(' ')
@@ -161,7 +162,6 @@ const Game = (props: { color: string }) => {
 
     return (
         <>
-
             <Container maxW={"4xl"} id="header">
                 <Stack
                     as={Box}
@@ -196,7 +196,7 @@ const Game = (props: { color: string }) => {
                                             {clue.clue.replace(countRegex, '')}
                                         </Text>
                                         <Text textAlign={'left'} as='i' pt='2' fontSize='sm'>
-                                            *{clue.clue.search(countRegex) !== -1 ? clue.clue.slice(clue.clue.search(countRegex) - 1) : ''}
+                                            {clue.clue.search(countRegex) !== -1 ? '*' + clue.clue.slice(clue.clue.search(countRegex) - 1) : ''}
                                         </Text>
                                     </HStack>
 
@@ -210,7 +210,7 @@ const Game = (props: { color: string }) => {
                                     </Stack>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
                                         <Link isExternal href={clue.source_url}>
-                                            {clue.puzzle_name} ({clue.puzzle_date ? clue.puzzle_date.toDateString() : 'Unknown date'})
+                                            {clue.puzzle_name} {clue.puzzle_date ? '(' + clue.puzzle_date.toDateString() + ')' : ''}
                                         </Link>
                                     </Text>
                                 </Box>

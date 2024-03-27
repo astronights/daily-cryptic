@@ -16,15 +16,12 @@ export const updateScore = async (rowid: number, score: number) => {
     return Promise.resolve();
 }
 
-export const getDailyClue = async (): Promise<Clue> => {
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+export const getDailyClue = async (date_used: Date): Promise<Clue> => {
 
     await connectDB();
 
     let todayClue = null;
-    todayClue = await ClueModel.findOne({ date_used: today });
+    todayClue = await ClueModel.findOne({ date_used: date_used });
 
     if (!todayClue) {
         const randomClue = await ClueModel.aggregate(
@@ -39,7 +36,7 @@ export const getDailyClue = async (): Promise<Clue> => {
                 { $sample: { size: 1 } }]
         );
         todayClue = randomClue[0];
-        todayClue.date_used = today;
+        todayClue.date_used = date_used;
         await ClueModel.updateOne({ _id: todayClue._id }, todayClue, { upsert: true });
     }
 
