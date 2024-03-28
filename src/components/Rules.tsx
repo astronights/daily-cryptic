@@ -163,7 +163,7 @@ const Rules = (props: { color: string }) => {
                                         </HStack>
                                     </Stack>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                        Here's an example of how your guesses might look like.
+                                        Here is an example of how your guesses might look like.
                                     </Text>
                                     <Stack pt={2}>
                                         {guesses.toReversed().map((guess, revix) => {
