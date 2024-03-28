@@ -1,6 +1,7 @@
 import {
     Container, Stack, Box, Text, Highlight,
-    Card, CardHeader, Heading, HStack, CardBody, StackDivider, Code, Badge, Link
+    Card, CardHeader, Heading, HStack, CardBody, 
+    StackDivider, Code, Badge, Link,
 } from "@chakra-ui/react"
 
 import { checkColor, mapColor } from "../utils";
@@ -128,38 +129,38 @@ const Rules = (props: { color: string }) => {
                                         <Heading size='xs' textAlign={'left'}>Letters</Heading>
                                         <HStack>
                                             <Badge fontSize={'inherit'} key={'l1'} padding={'0.5px'} colorScheme={'none'}>{'A'}</Badge>
-                                            <Text>The letter does not appear in the solution.</Text>
+                                            <Text textAlign={'left'}>The letter does not appear in the solution.</Text>
                                         </HStack>
                                         <HStack>
                                             <Badge fontSize={'inherit'} key={'l2'} padding={'0.5px'} colorScheme={'purple'}>{'B'}</Badge>
-                                            <Text>The letter appears in the solution, but in a different word.</Text>
+                                            <Text textAlign={'left'}>The letter appears in the solution, but in a different word.</Text>
                                         </HStack>
                                         <HStack>
                                             <Badge fontSize={'inherit'} key={'l3'} padding={'0.5px'} colorScheme={'yellow'}>{'C'}</Badge>
-                                            <Text>The letter appears in the solution in the same word, but a different position.</Text>
+                                            <Text textAlign={'left'}>The letter appears in the solution in the same word, but a different position.</Text>
                                         </HStack>
                                         <HStack>
                                             <Badge fontSize={'inherit'} key={'l4'} padding={'0.5px'} colorScheme={'green'}>{'D'}</Badge>
-                                            <Text>The letter appears in the solution in the same word in the same position.</Text>
+                                            <Text textAlign={'left'}>The letter appears in the solution in the same word in the same position.</Text>
                                         </HStack>
                                     </Stack>
                                     <Stack pt={2}>
                                         <Heading size='xs' textAlign={'left'}>Numbers</Heading>
                                         <HStack>
                                             <Badge fontSize={'inherit'} key={'n1'} padding={'0.5px'} colorScheme={'blue'}>{1}</Badge>
-                                            <Text>There is at least one letter of your guess word that never occurs in the solution.</Text>
+                                            <Text textAlign={'left'}>There is at least one letter of your guess word that never occurs in the solution.</Text>
                                         </HStack>
                                         <HStack>
                                             <Badge fontSize={'inherit'} key={'l2'} padding={'0.5px'} colorScheme={'purple'}>{2}</Badge>
-                                            <Text>All letters of your guess word appear somewhere in the solution.</Text>
+                                            <Text textAlign={'left'}>All letters of your guess word appear somewhere in the solution.</Text>
                                         </HStack>
                                         <HStack>
                                             <Badge fontSize={'inherit'} key={'l3'} padding={'0.5px'} colorScheme={'yellow'}>{3}</Badge>
-                                            <Text>All letters of your guess word appear in the same word (but different positions) of the solution.</Text>
+                                            <Text textAlign={'left'}>All letters of your guess word appear in the same word (but different positions) of the solution.</Text>
                                         </HStack>
                                         <HStack>
                                             <Badge fontSize={'inherit'} key={'l4'} padding={'0.5px'} colorScheme={'green'}>{4}</Badge>
-                                            <Text>Your guess word is exactly correct.</Text>
+                                            <Text textAlign={'left'}>Your guess word is exactly correct.</Text>
                                         </HStack>
                                     </Stack>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
