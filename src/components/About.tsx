@@ -61,6 +61,7 @@ const About = (props: { color: string }) => {
                                         My interests in Cryptic Crosswords stemmed from my resolution to solve the &nbsp;
                                         <Link href='https://lovattspuzzles.com/online-puzzles-competitions/daily-cryptic-crossword/' color={props.color} isExternal>Lovatts</Link>
                                         &nbsp; cryptic crossword daily. Grateful to this website, this eased my transition from a casual puzzle solver to a seasoned cryptic crossword enthusiast.
+                                        I created this game also inspired by Wordle to have a daily puzzle in a fun and sharable format.
                                     </Text>
                                 </Box>
                                 <Box>

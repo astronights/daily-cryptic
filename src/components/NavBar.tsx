@@ -24,7 +24,7 @@ const NavBar = (props: NavProps) => {
         "teal": "#319795",
         "yellow": "#D69E2E"
     };
-    
+
     const [scroll, setScroll] = useState(false);
     const { colorMode, toggleColorMode } = useColorMode();
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -107,7 +107,10 @@ const NavBar = (props: NavProps) => {
                                                     <Button
                                                         key={page}
                                                         variant="ghost"
-                                                        onClick={() => props.updatePage(page)}
+                                                        onClick={() => {
+                                                            props.updatePage(page)
+                                                            onClose(); } //TODO Check if this works
+                                                        }
                                                     >
                                                         {page[0].toUpperCase() + page.slice(1)}
                                                     </Button>

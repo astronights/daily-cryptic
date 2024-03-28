@@ -1,9 +1,18 @@
 import {
     Container, Stack, Box, Text, Highlight,
-    Card, CardHeader, Heading, HStack, CardBody, StackDivider, Code, Badge
+    Card, CardHeader, Heading, HStack, CardBody, StackDivider, Code, Badge, Link
 } from "@chakra-ui/react"
 
+import { checkColor, mapColor } from "../utils";
+
 const Rules = (props: { color: string }) => {
+
+    const guesses = [['THE', 'WORLDS'], ['SAD', 'ROARS'], ['RED', 'CROSS']];
+    const scores = [
+        [[-1, -1, 1], [-1, 1, 1, -1, 0, 1]],
+        [[0, -1, 2], [1, 1, 1, 0, 2]],
+        [[2, 2, 2], [2, 2, 2, 2, 2]]
+    ];
 
     return (
         <>
@@ -100,10 +109,10 @@ const Rules = (props: { color: string }) => {
                                     <Stack direction='row' pt={4}>
                                         <Badge fontSize={'inherit'} key={'count'} colorScheme='blue'>{3}</Badge>
                                         <Badge fontSize={'inherit'} key={'count'} colorScheme='blue'>{5}</Badge>
-                                        <Text>This indicates the answer is two words (3, 5) = THE WORLD</Text>
+                                        <Text>Two words RED CROSS</Text>
                                     </Stack>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                        Any variations including <Code>theworld</Code> (Space Insensitive),<Code>tHe wOrLd</Code> (Case Insensitive), <Code>THEWO RLD</Code> (Letter Count Insensitive) will be considered correct.
+                                        Any variations including <Code>redcross</Code> (Space Insensitive),<Code>rEd cRoSs</Code> (Case Insensitive), <Code>REDCR OSS</Code> (Letter Count Insensitive) will be considered correct.
                                         If you have more letters than the answer, all extra letters are grouped into the last word when validating.
                                     </Text>
 
@@ -113,9 +122,124 @@ const Rules = (props: { color: string }) => {
                                         Validation
                                     </Heading>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                        At each guess, your answer is validated. This validation is represented with the following colour scheme.
+                                        At each guess, your answer is validated. This validation is represented with the following colour scheme:
+                                    </Text>
+                                    <Stack pt={2}>
+                                        <Heading size='xs' textAlign={'left'}>Letters</Heading>
+                                        <HStack>
+                                            <Badge fontSize={'inherit'} key={'l1'} padding={'0.5px'} colorScheme={'none'}>{'A'}</Badge>
+                                            <Text>The letter does not appear in the solution.</Text>
+                                        </HStack>
+                                        <HStack>
+                                            <Badge fontSize={'inherit'} key={'l2'} padding={'0.5px'} colorScheme={'purple'}>{'B'}</Badge>
+                                            <Text>The letter appears in the solution, but in a different word.</Text>
+                                        </HStack>
+                                        <HStack>
+                                            <Badge fontSize={'inherit'} key={'l3'} padding={'0.5px'} colorScheme={'yellow'}>{'C'}</Badge>
+                                            <Text>The letter appears in the solution in the same word, but a different position.</Text>
+                                        </HStack>
+                                        <HStack>
+                                            <Badge fontSize={'inherit'} key={'l4'} padding={'0.5px'} colorScheme={'green'}>{'D'}</Badge>
+                                            <Text>The letter appears in the solution in the same word in the same position.</Text>
+                                        </HStack>
+                                    </Stack>
+                                    <Stack pt={2}>
+                                        <Heading size='xs' textAlign={'left'}>Numbers</Heading>
+                                        <HStack>
+                                            <Badge fontSize={'inherit'} key={'n1'} padding={'0.5px'} colorScheme={'blue'}>{1}</Badge>
+                                            <Text>There is at least one letter of your guess word that never occurs in the solution.</Text>
+                                        </HStack>
+                                        <HStack>
+                                            <Badge fontSize={'inherit'} key={'l2'} padding={'0.5px'} colorScheme={'purple'}>{2}</Badge>
+                                            <Text>All letters of your guess word appear somewhere in the solution.</Text>
+                                        </HStack>
+                                        <HStack>
+                                            <Badge fontSize={'inherit'} key={'l3'} padding={'0.5px'} colorScheme={'yellow'}>{3}</Badge>
+                                            <Text>All letters of your guess word appear in the same word (but different positions) of the solution.</Text>
+                                        </HStack>
+                                        <HStack>
+                                            <Badge fontSize={'inherit'} key={'l4'} padding={'0.5px'} colorScheme={'green'}>{4}</Badge>
+                                            <Text>Your guess word is exactly correct.</Text>
+                                        </HStack>
+                                    </Stack>
+                                    <Text textAlign={'left'} pt='2' fontSize='sm'>
+                                        Here's an example of how your guesses might look like.
+                                    </Text>
+                                    <Stack pt={2}>
+                                        {guesses.toReversed().map((guess, revix) => {
+                                            const index = guesses.length - revix - 1;
+                                            return (
+                                                <HStack key={index} direction='row'>
+                                                    <Stack direction={'row'}>
+                                                        {'RED CROSS'.split(' ').map((word, wix) => {
+                                                            return <Badge fontSize={'inherit'} key={wix} colorScheme={checkColor(scores[index][wix])}>{word.length}</Badge>
+                                                        })}
+                                                    </Stack>
+                                                    <Stack direction={'row'} paddingLeft={'16px'} spacing={'0px'}>
+                                                        {guess.map((word, wix) => {
+                                                            return word.split('').map((letter, lix) => {
+                                                                return lix === word.length - 1 ?
+                                                                    <><Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge><>&nbsp;</></> :
+                                                                    <Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge>
+                                                            });
+
+                                                        })}
+                                                    </Stack>
+                                                </HStack>
+                                            )
+                                        })
+                                        }
+                                    </Stack>
+                                </Box>
+                            </Stack>
+                        </CardBody>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <Heading size='md'>Cryptic Crosswords</Heading>
+                        </CardHeader>
+                        <CardBody>
+                            <Stack divider={<StackDivider />} spacing='4'>
+                                <Box>
+                                    <Heading textAlign={'left'} size='xs' textTransform='uppercase'>
+                                        Cryptic Rules
+                                    </Heading>
+                                    <Text textAlign={'left'} pt='2' fontSize='sm'>
+                                        The clues work very similar to how Cryptic Crossword clues work in general with each clue having a definition and a wordplay.
+                                        One of the tasks involved is to identify the definition and the wordplay in the clue, where the wordplay gives an alternate means to reach the answer.
+                                        The answer is usually a mix of the two parts and can be easily self verified.
                                     </Text>
                                 </Box>
+                                <Box>
+                                    <Heading textAlign={'left'} size='xs'>
+                                        Wordplay
+                                    </Heading>
+                                    <Text textAlign={'left'} pt='2' fontSize='sm'>
+                                        The types of wordplay included in the clues are varied and can include anagrams, acrostics, charades, containers, reversals, homophones, double definitions and cryptic definitions.
+                                        You might need some prior experience with cryptic crosswords to understand the wordplay in the clues.
+                                        Slang terms and abbreviations are also common in cryptic crosswords, which might require some getting used to.
+                                    </Text>
+                                </Box>
+                                <Box>
+                                    <Heading textAlign={'left'} size='xs'>
+                                        Resources
+                                    </Heading>
+                                    <Text textAlign={'left'} pt='2' fontSize='sm'>
+                                        Here are some online resources to get you started with how cryptic crosswords work:
+                                    </Text>
+                                    <Stack pt={2}>
+                                        <Text textAlign={'left'}>•&nbsp;
+                                            <Link href="https://en.wikipedia.org/wiki/Cryptic_crossword" isExternal>Wikipedia</Link>
+                                        </Text>
+                                        <Text textAlign={'left'}>•&nbsp;
+                                            <Link href="https://s.wsj.net/blogs/html/wsjcrypticguide.pdf" isExternal>Wall Street One Pager</Link>
+                                        </Text>
+                                        <Text textAlign={'left'}>•&nbsp;
+                                            <Link href="https://cryptics.fandom.com/wiki/Cryptipedia" isExternal>Cryptipedia (Extensive solving guides)</Link>
+                                        </Text>
+                                    </Stack>
+                                </Box>
+
                             </Stack>
                         </CardBody>
                     </Card>
@@ -133,9 +257,7 @@ const Rules = (props: { color: string }) => {
                                     </Heading>
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
                                         In line with scaling this further, I have added a few more features to the game.
-                                        This includes: \n Rating system for the clues, to gauge which clues are better constructed,
-                                        daily aggregated statistics to track performance, and a share feature to share your results
-                                        with friends/family across channels.
+                                        This includes: a rating system for the clues, daily aggregated statistics , and a share feature to share your results.
                                     </Text>
                                 </Box>
                                 <Box>
@@ -165,6 +287,7 @@ const Rules = (props: { color: string }) => {
                                     <Text textAlign={'left'} pt='2' fontSize='sm'>
                                         You can share results on Social Media after completing the puzzle.
                                         The share will include the puzzle date, the score and your pattern of solving (Represented by emojis).
+                                        While display, the purple is replaced with an orange for better contrast.
                                     </Text>
                                     <Text pt={4} textAlign={'left'} whiteSpace={'pre-line'}>
                                         {'Cryptle #1 4/5* \n🔵🟢🔵\n🟡🔵🟠\n🟠🟢🟡\n🟢🟢🟢\nhttps://daily-cryptic-iief.vercel.app/'}

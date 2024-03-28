@@ -1,9 +1,9 @@
 export const mapColor = (score: number) => {
     switch (score) {
         case 0:
-            return 'yellow';
-        case 1:
             return 'purple';
+        case 1:
+            return 'yellow';
         case 2:
             return 'green';
         case -1:
@@ -15,9 +15,9 @@ export const checkColor = (score: number[]) => {
     if (score.every((val) => val === 2)) {
         return 'green';
     } else if (score.every((val) => val > 0)) {
-        return 'purple';
-    } else if (score.every((val) => val >= 0)) {
         return 'yellow';
+    } else if (score.every((val) => val >= 0)) {
+        return 'purple';
     } else {
         return 'blue';
     }
@@ -25,7 +25,7 @@ export const checkColor = (score: number[]) => {
 
 export const getShareScores = (edition: number, hint: boolean, scores: number[][][]) => {
     const solved = scores[scores.length - 1].every((word) => word.every((letter) => letter === 2));
-    const emojis = ['🔵', '🟡', '🟠', '🟢'] ;
+    const emojis = ['🔵', '🟠', '🟡', , '🟢'] ;
     const colors = scores.map((word) => word.map((letter) => emojis[Math.min(...letter)+1]));
     console.log(colors);
     return "Cryptle #" + edition + ' ' + (solved ? scores.length : 'X') + '/5' + (hint ? '*' : '') + '\n\n' + colors.map((word) => word.join('')).join('\n') + '\n\n' + 'https://daily-cryptic-iief.vercel.app/';
