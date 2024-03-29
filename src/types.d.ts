@@ -9,4 +9,5 @@ export type Clue = {
   source: string;
   score: number;
   date_used: Date;
+  date_used_v2: string;
 };

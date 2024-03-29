@@ -11,6 +11,7 @@ const clueSchema = new mongoose.Schema({
     source: String,
     score: Number,
     date_used: Date,
+    date_used_v2: String,
 });
 
 const getModel = () => {

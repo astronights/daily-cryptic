@@ -15,10 +15,11 @@ import { useEffect, useState } from "react";
 
 import { checkColor, mapColor, getShareScores, compareAnswers } from "../utils";
 import copy from 'copy-to-clipboard';
+import { format } from "path";
 
 
 const Game = (props: { color: string, updatePage?: any;}) => {
-    const [today, setToday] = useState(new Date());
+    const [today, setToday] = useState(new Date().toISOString().substring(0, 10));
     const [nthDay, setNthDay] = useState<number>();
     const [def, setDef] = useState<boolean>(false);
     const [rating, setRating] = useState<number>(0.0);
@@ -41,13 +42,13 @@ const Game = (props: { color: string, updatePage?: any;}) => {
         source_url: "",
         source: "",
         score: 0,
-        date_used: today,
+        date_used: new Date(today),
+        date_used_v2: today,
     });
 
     const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
 
     useEffect(() => {
-        today.setHours(Math.abs(today.getTimezoneOffset() / 60), Math.abs(today.getTimezoneOffset() % 60), 0, 0);
         getDailyClue(today).then((clue) => {
             setClue({
                 ...clue,
@@ -180,7 +181,7 @@ const Game = (props: { color: string, updatePage?: any;}) => {
                                 <Spacer />
                                 <Stack direction={'row'}>
                                     <CalendarIcon />
-                                    <Heading fontSize='md'>{today.toDateString()}</Heading>
+                                    <Heading fontSize='md'>{new Date(today).toDateString()}</Heading>
                                 </Stack>
                             </Flex>
                         </CardHeader>
