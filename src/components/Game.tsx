@@ -13,13 +13,13 @@ import { Clue } from "../types";
 import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
 import { useEffect, useState } from "react";
 
-import { checkColor, mapColor, getShareScores, compareAnswers } from "../utils";
+import { checkColor, mapColor, getShareScores, compareAnswers, formatDate } from "../utils";
 import copy from 'copy-to-clipboard';
-import { format } from "path";
+
 
 
 const Game = (props: { color: string, updatePage?: any;}) => {
-    const [today, setToday] = useState(new Date().toISOString().substring(0, 10));
+    const [today, setToday] = useState(formatDate(new Date()));
     const [nthDay, setNthDay] = useState<number>();
     const [def, setDef] = useState<boolean>(false);
     const [rating, setRating] = useState<number>(0.0);
