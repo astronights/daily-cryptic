@@ -2,6 +2,8 @@
 
 A daily Cryptic Crossword challenge inspired from Wordle. The site is live at [Cryptle](https://daily-cryptic-iief.vercel.app/)
 
+![image](https://github.com/user-attachments/assets/00aae095-ee77-453f-8d52-54a83ce705ec)
+
 ## Technology
 
 The project is created with the following stack:
