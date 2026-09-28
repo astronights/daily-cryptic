@@ -12,7 +12,18 @@ export const clampDate = (requested: string, now = Date.now()) => {
     return allowed.includes(requested) ? requested : allowed[1];
 };
 
-export const previousDate = (iso: string) => utcISODate(Date.parse(iso) - DAY);
+// Stable 32-bit hash of a date string, scaled to [0, 1). FNV-1a, then murmur3's
+// final mix so dates differing only in the last digit land far apart.
+export const hashDate = (iso: string) => {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < iso.length; i++) h = Math.imul(h ^ iso.charCodeAt(i), 0x01000193);
+    h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+    h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+    h ^= h >>> 16;
+    return (h >>> 0) / 2 ** 32;
+};
+
+export const previousDate =(iso: string) => utcISODate(Date.parse(iso) - DAY);
 
 export const formatLong = (iso: string) =>
     new Date(iso + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });

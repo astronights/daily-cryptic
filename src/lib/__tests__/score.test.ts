@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isSolved, scoreGuess, splitGuess } from '../score';
-import { clampDate } from '../date';
+import { clampDate, hashDate } from '../date';
 import { decode, encode } from '../obfuscate';
 
 describe('splitGuess', () => {
@@ -43,6 +43,20 @@ describe('clampDate', () => {
     it('rejects far-off or malformed dates', () => {
         expect(clampDate('2030-01-01', now)).toBe('2026-09-27');
         expect(clampDate('garbage', now)).toBe('2026-09-27');
+    });
+});
+
+describe('hashDate', () => {
+    it('is stable and in [0, 1)', () => {
+        const h = hashDate('2026-09-28');
+        expect(hashDate('2026-09-28')).toBe(h);
+        expect(h).toBeGreaterThanOrEqual(0);
+        expect(h).toBeLessThan(1);
+    });
+    it('spreads consecutive days apart', () => {
+        const days = ['2026-09-28', '2026-09-29', '2026-09-30'].map(hashDate);
+        expect(new Set(days).size).toBe(3);
+        expect(Math.abs(days[0] - days[1])).toBeGreaterThan(0.01);
     });
 });
 

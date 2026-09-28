@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { hashDate } from './date';
 
 // A clue as stored, trimmed to what the app uses.
 export type StoredClue = {
@@ -18,12 +19,11 @@ export interface ClueStore {
 
 // ---------------------------------------------------------------- MongoDB
 
-// Unused clues carry a placeholder date before this cutoff.
-const UNUSED = '1970-01-01';
+// Unused clues carry a placeholder date (1970-01-01) before this cutoff.
 const CUTOFF = '2000-01-01';
 
 const clueSchema = new mongoose.Schema({
-    rowid: Number,
+    rowid: { type: Number, index: true },
     clue: String,
     answer: String,
     definition: String,
@@ -33,7 +33,7 @@ const clueSchema = new mongoose.Schema({
     source: String,
     score: Number,
     date_used: Date,
-    date_used_v2: { type: String, index: true },  // YYYY-MM-DD, or UNUSED
+    date_used_v2: { type: String, index: true },  // YYYY-MM-DD, or the placeholder
 });
 type ClueDoc = mongoose.InferSchemaType<typeof clueSchema>;
 const ClueModel = (mongoose.models.Clue as mongoose.Model<ClueDoc>) ?? mongoose.model<ClueDoc>('Clue', clueSchema);
@@ -47,32 +47,33 @@ const connect = () => {
     return connection;
 };
 
-// If two requests assign a clue to the same day at once, the lowest _id wins
-// and the loser is handed back to the unused pool.
+// Sorted by _id so a date that older code stamped on two clues still reads consistently.
 const findForDate = (date: string) =>
     ClueModel.findOne({ date_used_v2: date }).sort({ _id: 1 }).lean<StoredClue & { _id: unknown }>();
+
+// The date alone decides which clue it gets: hash it to a starting rowid and take
+// the first unused clue from there (wrapping around). Two requests racing to open
+// a new day therefore pick, and stamp, the very same clue.
+const pickUnused = async (date: string) => {
+    const last = await ClueModel.findOne().sort({ rowid: -1 }).select('rowid').lean();
+    const start = Math.floor(hashDate(date) * ((last?.rowid ?? 0) + 1));
+    const unused = { date_used_v2: { $lte: CUTOFF } };
+    return (await ClueModel.findOne({ ...unused, rowid: { $gte: start } }).sort({ rowid: 1 }).lean())
+        ?? (await ClueModel.findOne({ ...unused, rowid: { $lt: start } }).sort({ rowid: 1 }).lean());
+};
 
 const mongoStore: ClueStore = {
     async clueFor(date) {
         await connect();
         let clue = await findForDate(date);
         if (!clue) {
-            const [candidate] = await ClueModel.aggregate([
-                { $match: { date_used_v2: { $lte: CUTOFF } } },
-                { $sample: { size: 1 } },
-            ]);
+            const candidate = await pickUnused(date);
             if (!candidate) throw new Error('No unused clues left');
             await ClueModel.updateOne(
                 { _id: candidate._id, date_used_v2: { $lte: CUTOFF } },
                 { $set: { date_used_v2: date, date_used: new Date(date) } },
             );
             clue = await findForDate(date);
-            if (clue && String(clue._id) !== String(candidate._id)) {
-                await ClueModel.updateOne(
-                    { _id: candidate._id, date_used_v2: date },
-                    { $set: { date_used_v2: UNUSED, date_used: new Date(UNUSED) } },
-                );
-            }
         }
         const edition = await ClueModel.countDocuments({ date_used_v2: { $gt: CUTOFF, $lte: date } });
         return { clue: clue!, edition };
