@@ -33,9 +33,10 @@ const clueSchema = new mongoose.Schema({
     source: String,
     score: Number,
     date_used: Date,
-    date_used_v2: String,
+    date_used_v2: { type: String, index: true },  // YYYY-MM-DD, or UNUSED
 });
-const ClueModel = mongoose.models.Clue || mongoose.model('Clue', clueSchema);
+type ClueDoc = mongoose.InferSchemaType<typeof clueSchema>;
+const ClueModel = (mongoose.models.Clue as mongoose.Model<ClueDoc>) ?? mongoose.model<ClueDoc>('Clue', clueSchema);
 
 let connection: Promise<typeof mongoose> | null = null;
 const connect = () => {

@@ -11,7 +11,8 @@ type Props = {
 export default function Row({ lengths, words = [], marks, cursor, muted }: Props) {
     const sizes = lengths.map((len, i) => Math.max(len, words[i]?.length ?? 0));
     const total = sizes.reduce((a, b) => a + b, 0);
-    let cursorPlaced = !cursor;
+    // The next empty tile is in the first word that isn't full yet.
+    const cursorWord = cursor ? sizes.findIndex((size, i) => (words[i]?.length ?? 0) < size) : -1;
 
     return (
         <div
@@ -27,10 +28,7 @@ export default function Row({ lengths, words = [], marks, cursor, muted }: Props
                         if (mark) cls += ' ' + mark;
                         else if (letter) cls += ' filled';
                         if (j >= lengths[i]) cls += ' extra';
-                        if (!letter && !cursorPlaced) {
-                            cls += ' cursor';
-                            cursorPlaced = true;
-                        }
+                        if (i === cursorWord && j === (words[i]?.length ?? 0)) cls += ' cursor';
                         return (
                             <span key={j} className={cls} style={mark ? { animationDelay: `${(i * 10 + j) * 60}ms` } : undefined}>
                                 {letter}

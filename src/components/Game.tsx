@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { loadHint, loadPuzzle, rateClue } from '@/app/actions';
 import { formatLong, toISODate } from '@/lib/date';
 import { decode } from '@/lib/obfuscate';
@@ -31,12 +31,13 @@ export default function Game() {
     const inputRef = useRef<HTMLInputElement>(null);
 
     const load = useCallback(() => {
-        setFailed(false);
         loadPuzzle(toISODate(new Date()))
             .then((p) => {
                 setPuzzle(p);
                 setGame(loadGame(p.date));
                 setStats(loadStats());
+                setFailed(false);
+                setInput('');
                 if (!seenHelp()) setDialog('help');
             })
             .catch(() => setFailed(true));
@@ -122,7 +123,7 @@ export default function Game() {
                 {failed ? (
                     <div className="card error">
                         <p>Couldn&apos;t load today&apos;s clue.</p>
-                        <button className="button" onClick={load}>Try again</button>
+                        <button className="button" onClick={() => { setFailed(false); load(); }}>Try again</button>
                     </div>
                 ) : !puzzle || !game ? (
                     <Skeleton />
@@ -192,6 +193,7 @@ export default function Game() {
                                 onShare={share}
                                 onRate={rate}
                                 onStats={() => setDialog('stats')}
+                                onNewDay={load}
                             />
                         ) : (
                             <div className="actions">
@@ -236,10 +238,10 @@ function ClueText({ clue, hint }: { clue: string; hint: string | null }) {
 
 type ResultProps = {
     solved: boolean; answer: string; tries: number; rated?: boolean;
-    onShare: () => void; onRate: (liked: boolean) => void; onStats: () => void;
+    onShare: () => void; onRate: (liked: boolean) => void; onStats: () => void; onNewDay: () => void;
 };
 
-function Result({ solved, answer, tries, rated, onShare, onRate, onStats }: ResultProps) {
+function Result({ solved, answer, tries, rated, onShare, onRate, onStats, onNewDay }: ResultProps) {
     return (
         <section className="card result">
             <h2>{solved ? ['Genius!', 'Brilliant!', 'Nicely done!', 'Got it!', 'Phew!'][tries - 1] : 'So close'}</h2>
@@ -261,35 +263,53 @@ function Result({ solved, answer, tries, rated, onShare, onRate, onStats }: Resu
                     </>
                 ) : <span>Thanks for the feedback!</span>}
             </div>
-            <Countdown />
+            <Countdown onDone={onNewDay} />
         </section>
     );
 }
 
-function Countdown() {
+// Counts down to local midnight, then loads the new day's clue.
+function Countdown({ onDone }: { onDone: () => void }) {
+    const [midnight] = useState(() => new Date().setHours(24, 0, 0, 0));
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
-        const id = setInterval(() => setNow(Date.now()), 1000);
+        const id = setInterval(() => {
+            setNow(Date.now());
+            if (Date.now() >= midnight) {
+                clearInterval(id);
+                onDone();
+            }
+        }, 1000);
         return () => clearInterval(id);
-    }, []);
-    const midnight = new Date(now);
-    midnight.setHours(24, 0, 0, 0);
-    const s = Math.max(0, Math.floor((midnight.getTime() - now) / 1000));
+    }, [midnight, onDone]);
+    const s = Math.max(0, Math.floor((midnight - now) / 1000));
     const pad = (n: number) => String(n).padStart(2, '0');
     return <p className="countdown">Next clue in <b>{pad(Math.floor(s / 3600))}:{pad(Math.floor(s / 60) % 60)}:{pad(s % 60)}</b></p>;
 }
 
+// The theme lives on <html data-theme>, falling back to the system setting.
+const DARK_QUERY = '(prefers-color-scheme: dark)';
+const isDark = () => {
+    const theme = document.documentElement.dataset.theme;
+    return theme ? theme === 'dark' : matchMedia(DARK_QUERY).matches;
+};
+const subscribeTheme = (onChange: () => void) => {
+    const query = matchMedia(DARK_QUERY);
+    const observer = new MutationObserver(onChange);
+    query.addEventListener('change', onChange);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => {
+        query.removeEventListener('change', onChange);
+        observer.disconnect();
+    };
+};
+
 function ThemeToggle() {
-    const [dark, setDark] = useState(false);
-    useEffect(() => {
-        setDark(document.documentElement.dataset.theme === 'dark' ||
-            (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches));
-    }, []);
+    const dark = useSyncExternalStore(subscribeTheme, isDark, () => false);
     const toggle = () => {
         const theme = dark ? 'light' : 'dark';
         document.documentElement.dataset.theme = theme;
         try { localStorage.setItem('cryptle_theme', theme); } catch { }
-        setDark(!dark);
     };
     return (
         <button className="icon-button" onClick={toggle} aria-label={dark ? 'Light mode' : 'Dark mode'}>
