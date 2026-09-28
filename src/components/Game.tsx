@@ -1,375 +1,332 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { loadHint, loadPuzzle, rateClue } from '@/app/actions';
+import { formatLong, toISODate } from '@/lib/date';
+import { decode } from '@/lib/obfuscate';
+import { isSolved, lettersOnly, scoreGuess, splitGuess } from '@/lib/score';
+import { SITE_URL, shareText } from '@/lib/share';
 import {
-    Box, Heading, Container, Text, Button, Stack, CardBody, Card, CardHeader,
-    StackDivider, Flex, Spacer, Link, CircularProgress, CircularProgressLabel,
-    Input, HStack, Badge, Divider, Modal, ModalBody, ModalCloseButton, ModalContent,
-    ModalFooter, ModalHeader, ModalOverlay, SkeletonText
-} from "@chakra-ui/react";
-import {
-    CalendarIcon, LinkIcon, SearchIcon, InfoOutlineIcon, TriangleUpIcon,
-    TriangleDownIcon, ExternalLinkIcon, CopyIcon, ArrowForwardIcon, QuestionOutlineIcon
-} from "@chakra-ui/icons";
-import { BarChart } from '@saas-ui/charts'
-import { Clue } from "../types";
-import { getDailyClue, getNthDay, updateScore } from "../api/ClueAPI";
-import { useEffect, useState } from "react";
+    MAX_GUESSES, loadGame, loadStats, markHelpSeen, recordResult, saveGame, seenHelp,
+    type SavedGame, type Stats,
+} from '@/lib/storage';
+import type { Puzzle } from '@/lib/types';
+import Dialog from './Dialog';
+import Help from './Help';
+import { HelpIcon, MoonIcon, StatsIcon, SunIcon } from './Icons';
+import Row from './Row';
+import StatsView from './StatsView';
 
-import { checkColor, mapColor, getShareScores, compareAnswers, formatDate } from "../utils";
-import copy from 'copy-to-clipboard';
+export default function Game() {
+    const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
+    const [failed, setFailed] = useState(false);
+    const [game, setGame] = useState<SavedGame | null>(null);
+    const [stats, setStats] = useState<Stats | null>(null);
+    const [input, setInput] = useState('');
+    const [focused, setFocused] = useState(false);
+    const [dialog, setDialog] = useState<'help' | 'stats' | null>(null);
+    const [toast, setToast] = useState<string | null>(null);
+    const [shake, setShake] = useState(false);
+    const [hintLoading, setHintLoading] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
 
-
-
-const Game = (props: { color: string, updatePage?: any;}) => {
-    const [today, setToday] = useState(formatDate(new Date()));
-    const [nthDay, setNthDay] = useState<number>();
-    const [def, setDef] = useState<boolean>(false);
-    const [rating, setRating] = useState<number>(0.0);
-    const [guesses, setGuesses] = useState<string[][]>([]);
-    const [scores, setScores] = useState<number[][][]>([]);
-    const [rated, setRated] = useState<boolean>(false);
-    const [curGuess, setCurGuess] = useState<string>('');
-    const [gameEnd, setGameEnd] = useState<boolean>(false);
-    const [win, setWin] = useState<boolean>(false);
-    const [stats, setStats] = useState<boolean>(false);
-    const [oldStats, setOldStats] = useState<number[]>([0, 0, 0, 0, 0, 0]);
-
-    const [clue, setClue] = useState<Clue>({
-        rowid: 0,
-        clue: "",
-        answer: "",
-        definition: "",
-        puzzle_date: null,
-        puzzle_name: "",
-        source_url: "",
-        source: "",
-        score: 0,
-        date_used: new Date(today),
-        date_used_v2: today,
-    });
-
-    const countRegex = new RegExp('\\([0-9\\W]+\\)$', 'g')
-
-    useEffect(() => {
-        getDailyClue(today).then((clue) => {
-            setClue({
-                ...clue,
-                answer: clue.answer.toUpperCase().split(/[^A-Z]/).filter(word => word.length > 0).join(' ')
-            });
-            setRating(Math.min(Math.max(clue.score * 0.1 + 3.0, 0.0), 5.0));
-            const data = JSON.parse(localStorage.getItem("cryptle_cur"));
-            if (data && data.clue.rowid === clue.rowid && data.guesses.length > 0) {
-                setGuesses(data.guesses);
-                setScores(data.scores);
-                checkWin(clue.answer, data.guesses[data.guesses.length - 1]);
-                if (data.guesses.length === 5) {
-                    setGameEnd(true);
-                    setStats(true);
-                }
-            }
-            setOldStats(JSON.parse(localStorage.getItem("cryptle_stats")) || [0, 0, 0, 0, 0, 0]);
-        });
-        getNthDay().then((nthday) => {
-            setNthDay(nthday);
-        });
-
+    const load = useCallback(() => {
+        loadPuzzle(toISODate(new Date()))
+            .then((p) => {
+                setPuzzle(p);
+                setGame(loadGame(p.date));
+                setStats(loadStats());
+                setFailed(false);
+                setInput('');
+                if (!seenHelp()) setDialog('help');
+            })
+            .catch(() => setFailed(true));
     }, []);
+    useEffect(load, [load]);
+    useEffect(() => { if (game) saveGame(game); }, [game]);
 
-    const triggerDef = () => {
-        setDef(true);
-    }
+    const answer = useMemo(() => (puzzle ? decode(puzzle.key) : ''), [puzzle]);
+    const guesses = game?.guesses ?? [];
+    const solved = guesses.some((g) => isSolved(answer, g));
+    const over = solved || guesses.length >= MAX_GUESSES;
+    const maxLetters = (puzzle?.lengths.reduce((a, b) => a + b, 0) ?? 0) + 4;
 
-    const reRate = (e: any) => {
-        if (!rated) {
-            let id = e.target.id;
-            const newScore = id === 'plus' ? clue.score + 1 : clue.score - 1;
-            const newRating = newScore * 0.1 + 3.0;
-            setRating(newRating > 5.0 ? 5.0 : (newRating < 0.0 ? 0.0 : newRating));
-            setRated(true);
-            updateScore(clue.rowid, newScore);
-        }
-    }
+    const flash = (message: string) => {
+        setToast(message);
+        setTimeout(() => setToast(null), 2000);
+    };
 
-    const handleChange = (e: any) => {
-        setCurGuess(e.target.value.replace(/[^A-Za-z ]/g, '').toUpperCase());
-    }
-
-    const checkWin = (answer: string, latestGuess: string[]) => {
-        const flatAnswer = answer.replace(/[^A-Z]/g, '');
-        const flatGuess = latestGuess.join('').toUpperCase().replace(/[^A-Z]/g, '');
-        if (flatAnswer === flatGuess) {
-            setWin(true);
-            setGameEnd(true);
-            setStats(true);
-        }
-        if (guesses.length === 5) {
-            setGameEnd(true);
-            setStats(true);
-        }
-    }
-
-    const updateGuess = () => {
-        const isLastGuess = guesses.length === 4;
-        const guess = (document.getElementById('guess') as HTMLInputElement).value;
-        if (guess.trim().length === 0) {
+    const submit = () => {
+        if (!game || over) return;
+        const guess = lettersOnly(input);
+        if (!guess) {
+            setShake(true);
+            setTimeout(() => setShake(false), 400);
             return;
         }
-        const scoredGuesses = compareAnswers(clue.answer, guess.toUpperCase());
-        const guessWords = scoredGuesses[0];
-        const guessScores = scoredGuesses[1];
-        setGuesses([...guesses, guessWords]);
-        setScores([...scores, guessScores]);
-        localStorage.setItem("cryptle_cur",
-            JSON.stringify({ guesses: [...guesses, guessWords], scores: [...scores, guessScores], clue }));
-        checkWin(clue.answer, guessWords);
-        if (guessScores.flat().every((val) => val === 2)) {
-            setOldStats(oldStats.map((val, ix) => ix === guesses.length ? val + 1 : val));
-            localStorage.setItem("cryptle_stats", JSON.stringify(oldStats.map((val, ix) => ix === guesses.length ? val + 1 : val)));
+        const next = [...game.guesses, guess];
+        setGame({ ...game, guesses: next });
+        setInput('');
+        const won = isSolved(answer, guess);
+        if (won || next.length >= MAX_GUESSES) {
+            setStats(recordResult(game.date, won ? next.length : null));
+            inputRef.current?.blur();
         }
-        if (isLastGuess) {
-            setGameEnd(true);
-            setStats(true);
-            setOldStats([...oldStats.slice(0, 5), oldStats[5] + 1]);
-            localStorage.setItem("cryptle_stats", JSON.stringify([...oldStats.slice(0, 5), oldStats[5] + 1]));
+    };
+
+    const showHint = async () => {
+        if (!game || game.hintUsed) return;
+        setHintLoading(true);
+        const hint = await loadHint(game.date).catch(() => null);
+        setHintLoading(false);
+        setGame((g) => g && { ...g, hint, hintUsed: true });
+    };
+
+    const share = async () => {
+        if (!puzzle || !game) return;
+        const text = shareText(puzzle.edition, answer, game.guesses, solved, game.hintUsed);
+        if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+            navigator.share({ text, url: SITE_URL }).catch(() => { });
+            return;
         }
-        setCurGuess('');
-    }
-
-    const shareStats = () => {
-        const scoresToCopy = getShareScores(nthDay, def, scores);
-        if (navigator.share) {
-            navigator.share({
-                title: 'Cryptle',
-                text: scoresToCopy.replace('https://daily-cryptic-iief.vercel.app/', ''),
-                url: 'https://daily-cryptic-iief.vercel.app/'
-            })
-                .then(() => console.log('Shared successfully'))
-                .catch((error) => console.error('Error sharing:', error));
-        } else {
-            console.log('Web Share API not supported.');
+        try {
+            await navigator.clipboard.writeText(`${text}\n\n${SITE_URL}`);
+            flash('Copied to clipboard');
+        } catch {
+            flash('Could not copy');
         }
+    };
 
-    }
+    const rate = (liked: boolean) => {
+        if (!game || game.rated !== undefined) return;
+        setGame({ ...game, rated: liked });
+        rateClue(game.date, liked).catch(() => { });
+    };
 
-    const copyStats = () => {
-        const scoresToCopy = getShareScores(nthDay, def, scores);
-        copy(scoresToCopy);
-    }
-
-    // Small hack to get rid of temporary unfixed bug in SAAS UI
-    const error = console.error;
-    console.error = (...args: any) => {
-        if (/defaultProps/.test(args[0])) return;
-        error(...args);
+    const closeDialog = () => {
+        if (dialog === 'help') markHelpSeen();
+        setDialog(null);
     };
 
     return (
-        <>
-            <Container maxW={"4xl"} id="header">
-                <Stack
-                    as={Box}
-                    textAlign={"center"}
-                    spacing={{ base: 6, md: 6 }}
-                    pb={{ base: 20, md: 16 }}
-                    pt={{ base: 24, md: 24 }}
-                >
-                    <Card>
+        <div className="app">
+            <header className="topbar">
+                <h1 className="wordmark">Crypt<span>le</span></h1>
+                <nav>
+                    <button className="icon-button" onClick={() => setDialog('help')} aria-label="How to play"><HelpIcon /></button>
+                    <button className="icon-button" onClick={() => setDialog('stats')} aria-label="Statistics"><StatsIcon /></button>
+                    <ThemeToggle />
+                </nav>
+            </header>
 
-                        <CardHeader>
-                            <Flex>
-                                <SkeletonText isLoaded={clue.answer != ''}>
-                                    <Heading size='md'>Cryptle # {nthDay}</Heading>
-                                </SkeletonText>
-                                <Spacer />
-                                <Stack direction={'row'}>
-                                    <CalendarIcon />
-                                    <Heading fontSize='md'>{new Date(today).toDateString()}</Heading>
-                                </Stack>
-                            </Flex>
-                        </CardHeader>
-
-
-                        <CardBody>
-                            <Stack divider={<StackDivider />} spacing='4'>
-                                <Box>
-                                    <Stack direction={'row'} spacing='2'>
-                                        <SearchIcon />
-                                        <Heading textAlign={'left'} size='xs' textTransform='uppercase'>
-                                            Clue
-                                        </Heading>
-                                    </Stack>
-                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1} mt={2}>
-                                        <HStack>
-                                            <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                                {clue.clue.replace(countRegex, '')}
-                                            </Text>
-                                            <Text textAlign={'left'} as='i' pt='2' fontSize='sm'>
-                                                {clue.clue.search(countRegex) !== -1 ? '*' + clue.clue.slice(clue.clue.search(countRegex) - 1) : ''}
-                                            </Text>
-                                        </HStack>
-                                    </SkeletonText>
-
-                                </Box>
-                                <Box>
-                                    <Stack direction={'row'} spacing='2'>
-                                        <LinkIcon />
-                                        <Heading textAlign={'left'} size='xs' textTransform='uppercase'>
-                                            Source
-                                        </Heading>
-                                    </Stack>
-                                    <SkeletonText isLoaded={clue.answer != ''} noOfLines={1} mt={2}>
-                                        <Text textAlign={'left'} pt='2' fontSize='sm'>
-                                            <Link isExternal href={clue.source_url}>
-                                                {clue.puzzle_name} {clue.puzzle_date ? '(' + clue.puzzle_date.toDateString() + ')' : ''}
-                                            </Link>
-                                        </Text>
-                                    </SkeletonText>
-                                </Box>
-                                <Box alignItems={'start'}>
-                                    <Stack direction={'row'} spacing='2'>
-                                        <Button variant={'link'} onClick={triggerDef}>
-                                            <InfoOutlineIcon />
-                                            <Heading size='xs' textTransform='uppercase'>
-                                                &nbsp; Hint (Definition) ?
-                                            </Heading>
-                                        </Button>
-                                    </Stack>
-                                    <Text display={def ? 'block' : 'none'} textAlign={'left'} pt='2' fontSize='sm'>
-                                        {clue.definition && clue.definition.length > 0 ? clue.definition : 'No hint available.'}
-                                    </Text>
-                                </Box>
-                            </Stack>
-                        </CardBody>
-                    </Card>
-
-                    <Stack
-                        as={Box} w={'4x1'}
-                        textAlign={"center"}
-                        spacing={{ base: 6, md: 6 }}>
-                        <Card>
-                            <CardHeader>
-                                <Flex>
-                                <Heading textAlign={'left'} fontSize='md'>
-                                    Guess ! ({5 - guesses.length} Remaining)
-                                </Heading>
-                                <Spacer />
-                                <Button leftIcon={<QuestionOutlineIcon/>} size={'sm'} onClick={_ => props.updatePage('rules')} iconSpacing={0} variant='outline' />
-                                </Flex>
-                            </CardHeader>
-                            <CardBody>
-                                <Stack>
-                                    <HStack direction='row'>
-                                        <Stack direction='row' >
-                                            {clue.answer.split(' ').map((word, index) => {
-                                                return <Badge fontSize={'inherit'} key={index} colorScheme='blue'>{word.length}</Badge>
-                                            })}
-                                        </Stack>
-                                        <Input width={'750px'} id='guess' placeholder='Guess!' value={curGuess} onKeyUp={(e) => e.key === 'Enter' ? updateGuess() : {}} onChange={handleChange} isDisabled={gameEnd} />
-                                        <Button variant='outline' onClick={updateGuess} isDisabled={gameEnd}>{(typeof window !== "undefined") && (window.visualViewport.width > 768) ? 'Submit' : <ArrowForwardIcon />}</Button>
-                                    </HStack>
-                                    <Divider />
-                                    <Stack>
-                                        {guesses.toReversed().map((guess, revix) => {
-                                            const index = guesses.length - revix - 1;
-                                            return (
-                                                <HStack key={index} direction='row'>
-                                                    <Stack direction={'row'}>
-                                                        {clue.answer.split(' ').map((word, wix) => {
-                                                            return <Badge fontSize={'inherit'} key={wix} colorScheme={checkColor(scores[index][wix])}>{word.length}</Badge>
-                                                        })}
-                                                    </Stack>
-                                                    <Stack direction={'row'} paddingLeft={'16px'} spacing={'0px'}>
-                                                        {guess.map((word, wix) => {
-                                                            return word.split('').map((letter, lix) => {
-                                                                return lix === word.length - 1 ?
-                                                                    <><Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge><>&nbsp;</></> :
-                                                                    <Badge fontSize={'inherit'} key={lix} padding={'0.5px'} colorScheme={mapColor(scores[index][wix][lix])}>{letter}</Badge>
-                                                            });
-
-                                                        })}
-                                                    </Stack>
-                                                </HStack>
-                                            )
-                                        })
-                                        }
-                                    </Stack>
-                                </Stack>
-                            </CardBody>
-                        </Card>
-                        <Card>
-                            <CardHeader>
-                                <Heading textAlign={'left'} fontSize='md'>
-                                    Did You Like Today&apos;s Puzzle ?
-                                </Heading>
-                            </CardHeader>
-                            <CardBody paddingTop={'1px'}>
-                                <HStack direction='row'>
-                                    <Spacer />
-                                    <Button id='minus' onClick={reRate} leftIcon={<TriangleDownIcon />} variant='outline'>
-                                        No
-                                    </Button>
-                                    <Spacer />
-                                    <HStack direction={'row'}>
-                                        <Heading verticalAlign={'center'} size='sm'>Average Rating</Heading>
-                                        <CircularProgress value={(rating / 5.0) * 100}
-                                            color={rating > 4 ? 'green' : (rating < 2 ? 'red' : 'orange')}>
-                                            <CircularProgressLabel textAlign={'center'}>{rating}</CircularProgressLabel>
-                                        </CircularProgress>
-                                    </HStack>
-
-                                    <Spacer />
-                                    <Button id='plus' onClick={reRate} leftIcon={<TriangleUpIcon />} variant='outline'>
-                                        Yes
-                                    </Button>
-                                    <Spacer />
-                                </HStack>
-                            </CardBody>
-                        </Card>
-                    </Stack>
-
+            <main className="main">
+                {failed ? (
+                    <div className="card error">
+                        <p>Couldn&apos;t load today&apos;s clue.</p>
+                        <button className="button" onClick={() => { setFailed(false); load(); }}>Try again</button>
+                    </div>
+                ) : !puzzle || !game ? (
+                    <Skeleton />
+                ) : (
                     <>
+                        <p className="meta">#{puzzle.edition} · {formatLong(puzzle.date)}</p>
 
-                        <Modal isOpen={stats} onClose={() => { setStats(false) }}>
-                            <ModalOverlay />
-                            <ModalContent>
-                                <ModalHeader>{win ? 'Congratulations!' : 'Better Luck Tomorrow..'}</ModalHeader>
-                                <ModalCloseButton />
-                                <ModalBody>
-                                    <Text>
-                                        {win ? 'You have solved today\'s puzzle in ' + guesses.length + (guesses.length > 1 ? ' guesses! ' : ' guess! ') : 'You ran out of guesses. :( '}
-                                        The correct answer was {clue.answer}!
-                                    </Text>
-                                    <BarChart
-                                        data={
-                                            oldStats
-                                                .map((val, ix) => {
-                                                    return {
-                                                        date: ix < 5 ? (ix + 1) : 'X',
-                                                        Solved: val,
-                                                    }
-                                                })}
-                                        categories={['Solved']}
-                                        colors={['green', 'blue', 'red']}
-                                        variant="solid"
-                                        height="300px"
-                                    />
-                                </ModalBody>
+                        <section className="card clue-card">
+                            <p className="clue">
+                                <ClueText clue={puzzle.clue} hint={game.hint} />{' '}
+                                <span className="enum">({puzzle.lengths.join(',')})</span>
+                            </p>
+                            {game.hintUsed && !clueContains(puzzle.clue, game.hint) && (
+                                <p className="hint-line">{game.hint ? <>Definition: <mark>{game.hint}</mark></> : 'No hint available for this clue.'}</p>
+                            )}
+                            {puzzle.source.name && (
+                                <p className="source">
+                                    From{' '}
+                                    {puzzle.source.url
+                                        ? <a href={puzzle.source.url} target="_blank" rel="noreferrer">{puzzle.source.name}</a>
+                                        : puzzle.source.name}
+                                    {puzzle.source.date && ` · ${formatLong(puzzle.source.date)}`}
+                                </p>
+                            )}
+                        </section>
 
-                                <ModalFooter>
-                                    <Button leftIcon={<ExternalLinkIcon />} colorScheme='blue' mr={1} onClick={shareStats}>
-                                        Share
-                                    </Button>
-                                    <Button leftIcon={<CopyIcon />} colorScheme='blue' mr={1} onClick={copyStats}>
-                                        Copy Results
-                                    </Button>
-                                </ModalFooter>
-                            </ModalContent>
-                        </Modal>
+                        <section
+                            className={'board' + (shake ? ' shake' : '')}
+                            onClick={() => inputRef.current?.focus()}
+                        >
+                            {Array.from({ length: MAX_GUESSES }, (_, i) => {
+                                if (i < guesses.length) {
+                                    const { words, marks } = scoreGuess(answer, guesses[i]);
+                                    return <Row key={i} lengths={puzzle.lengths} words={words} marks={marks} />;
+                                }
+                                if (i === guesses.length && !over) {
+                                    return <Row key={i} lengths={puzzle.lengths} words={splitGuess(puzzle.lengths, input)} cursor={focused} />;
+                                }
+                                return <Row key={i} lengths={puzzle.lengths} muted />;
+                            })}
+                            {!over && (
+                                <input
+                                    ref={inputRef}
+                                    className="ghost-input"
+                                    value={input}
+                                    onChange={(e) => setInput(lettersOnly(e.target.value).slice(0, maxLetters))}
+                                    onKeyDown={(e) => e.key === 'Enter' && submit()}
+                                    onFocus={() => setFocused(true)}
+                                    onBlur={() => setFocused(false)}
+                                    autoFocus={!matchMedia('(pointer: coarse)').matches}
+                                    autoCapitalize="characters"
+                                    autoComplete="off"
+                                    autoCorrect="off"
+                                    spellCheck={false}
+                                    enterKeyHint="go"
+                                    aria-label="Your answer"
+                                />
+                            )}
+                        </section>
+
+                        {over ? (
+                            <Result
+                                solved={solved}
+                                answer={answer}
+                                tries={guesses.length}
+                                rated={game.rated}
+                                onShare={share}
+                                onRate={rate}
+                                onStats={() => setDialog('stats')}
+                                onNewDay={load}
+                            />
+                        ) : (
+                            <div className="actions">
+                                <button className="button secondary" onClick={showHint} disabled={game.hintUsed || hintLoading}>
+                                    {game.hintUsed ? 'Hint shown' : hintLoading ? 'Loading…' : 'Hint'}
+                                </button>
+                                <span className="tries">{MAX_GUESSES - guesses.length} left</span>
+                                <button className="button" onClick={submit} disabled={!input}>Submit</button>
+                            </div>
+                        )}
                     </>
+                )}
+            </main>
 
+            <footer className="footer">
+                Clues from the <a href="https://cryptics.georgeho.org/" target="_blank" rel="noreferrer">Cryptic Crossword Dataset</a>
+                {' · '}made by <a href="https://www.linkedin.com/in/shubhankar-agarwal/" target="_blank" rel="noreferrer">astronights</a>
+            </footer>
 
-                </Stack>
-            </Container >
-        </>
+            <Dialog open={dialog === 'help'} title="How to play" onClose={closeDialog}>
+                <Help />
+                <button className="button wide" onClick={closeDialog}>Let&apos;s play</button>
+            </Dialog>
+            <Dialog open={dialog === 'stats'} title="Statistics" onClose={closeDialog}>
+                {stats && <StatsView stats={stats} today={over ? (solved ? guesses.length : 'X') : undefined} />}
+                {over && <button className="button wide" onClick={share}>Share result</button>}
+            </Dialog>
+
+            {toast && <div className="toast" role="status">{toast}</div>}
+        </div>
     );
 }
 
-export default Game;
+const clueContains = (clue: string, hint: string | null) =>
+    !!hint && clue.toLowerCase().includes(hint.toLowerCase());
+
+function ClueText({ clue, hint }: { clue: string; hint: string | null }) {
+    if (!hint || !clueContains(clue, hint)) return <>{clue}</>;
+    const i = clue.toLowerCase().indexOf(hint.toLowerCase());
+    return <>{clue.slice(0, i)}<mark>{clue.slice(i, i + hint.length)}</mark>{clue.slice(i + hint.length)}</>;
+}
+
+type ResultProps = {
+    solved: boolean; answer: string; tries: number; rated?: boolean;
+    onShare: () => void; onRate: (liked: boolean) => void; onStats: () => void; onNewDay: () => void;
+};
+
+function Result({ solved, answer, tries, rated, onShare, onRate, onStats, onNewDay }: ResultProps) {
+    return (
+        <section className="card result">
+            <h2>{solved ? ['Genius!', 'Brilliant!', 'Nicely done!', 'Got it!', 'Phew!'][tries - 1] : 'So close'}</h2>
+            <p>
+                {solved
+                    ? `Solved in ${tries} ${tries === 1 ? 'guess' : 'guesses'}.`
+                    : <>The answer was <b className="answer">{answer}</b>.</>}
+            </p>
+            <div className="result-actions">
+                <button className="button" onClick={onShare}>Share</button>
+                <button className="button secondary" onClick={onStats}>Stats</button>
+            </div>
+            <div className="rating">
+                {rated === undefined ? (
+                    <>
+                        <span>Enjoy this clue?</span>
+                        <button className="chip" onClick={() => onRate(true)} aria-label="Yes">👍</button>
+                        <button className="chip" onClick={() => onRate(false)} aria-label="No">👎</button>
+                    </>
+                ) : <span>Thanks for the feedback!</span>}
+            </div>
+            <Countdown onDone={onNewDay} />
+        </section>
+    );
+}
+
+// Counts down to local midnight, then loads the new day's clue.
+function Countdown({ onDone }: { onDone: () => void }) {
+    const [midnight] = useState(() => new Date().setHours(24, 0, 0, 0));
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => {
+            setNow(Date.now());
+            if (Date.now() >= midnight) {
+                clearInterval(id);
+                onDone();
+            }
+        }, 1000);
+        return () => clearInterval(id);
+    }, [midnight, onDone]);
+    const s = Math.max(0, Math.floor((midnight - now) / 1000));
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return <p className="countdown">Next clue in <b>{pad(Math.floor(s / 3600))}:{pad(Math.floor(s / 60) % 60)}:{pad(s % 60)}</b></p>;
+}
+
+// The theme lives on <html data-theme>, falling back to the system setting.
+const DARK_QUERY = '(prefers-color-scheme: dark)';
+const isDark = () => {
+    const theme = document.documentElement.dataset.theme;
+    return theme ? theme === 'dark' : matchMedia(DARK_QUERY).matches;
+};
+const subscribeTheme = (onChange: () => void) => {
+    const query = matchMedia(DARK_QUERY);
+    const observer = new MutationObserver(onChange);
+    query.addEventListener('change', onChange);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => {
+        query.removeEventListener('change', onChange);
+        observer.disconnect();
+    };
+};
+
+function ThemeToggle() {
+    const dark = useSyncExternalStore(subscribeTheme, isDark, () => false);
+    const toggle = () => {
+        const theme = dark ? 'light' : 'dark';
+        document.documentElement.dataset.theme = theme;
+        try { localStorage.setItem('cryptle_theme', theme); } catch { }
+    };
+    return (
+        <button className="icon-button" onClick={toggle} aria-label={dark ? 'Light mode' : 'Dark mode'}>
+            {dark ? <SunIcon /> : <MoonIcon />}
+        </button>
+    );
+}
+
+function Skeleton() {
+    return (
+        <div aria-busy="true" aria-label="Loading">
+            <div className="skeleton" style={{ width: '40%', height: 14, margin: '4px auto 16px' }} />
+            <div className="card clue-card">
+                <div className="skeleton" style={{ height: 22, marginBottom: 10 }} />
+                <div className="skeleton" style={{ width: '60%', height: 22 }} />
+            </div>
+            <div className="skeleton" style={{ height: 260, marginTop: 20 }} />
+        </div>
+    );
+}
